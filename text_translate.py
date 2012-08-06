@@ -18,6 +18,7 @@
 
 import string
 
+
 def read_table_encode(table_string):
     table = table_string.split("\n")
     dictionary = {}
@@ -51,15 +52,15 @@ def ascii_to_hex(string_, dictionary):
         elif character in dictionary:
             #print "case normal"
             trans_string += dictionary[character]
-        elif string_[i:i+2] in dictionary:
+        elif string_[i:i + 2] in dictionary:
             #print "case3"
-            trans_string += dictionary[string_[i:i+2]]
+            trans_string += dictionary[string_[i:i + 2]]
             i += 1
         else:  # (not tested)
             length = 2
             while length < 10:
-                if string_[i:i+length] in dictionary:
-                    trans_string += dictionary[string_[i:i+length]]
+                if string_[i:i + length] in dictionary:
+                    trans_string += dictionary[string_[i:i + length]]
                     i += length - 1
                     break
                 else:

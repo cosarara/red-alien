@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 
+
 #This file is part of ASC.
 
 #    ASC is free software: you can redistribute it and/or modify
@@ -24,15 +25,14 @@
 #        ...], ...]}
 #
 
-
 pkcommands = {
         "#org": {"args": ("offset", (4,))},
         "=": {"args": ("text", ("*",))},
         "#dyn": {"args": ("offset", (4,))},
         "#raw": {"args": ("hex byte", (1,))},
         "if": {"args": ("comp, command, offset", (1, 1, 4))},
-        "nop0": {"hex: 00"},
-        "nop1": {"hex: 01"},
+        "nop0": {"hex": "00"},
+        "nop1": {"hex": "01"},
         "end": {"hex": "02"},
         "return": {"hex": "03"},
         "call": {"hex": "04", "args": ("adress", (4,)),
@@ -101,9 +101,9 @@ pkcommands = {
         }
 
 # Alias:normal_name
-aliases = {"waitmovement":"pauseevent",
-           "givepokemon":"addpokemon",
-           "#dynamic":"#dyn"}
+aliases = {"waitmovement": "pauseevent",
+           "givepokemon": "addpokemon",
+           "#dynamic": "#dyn"}
 
 pkcommands_and_aliases = pkcommands
 for alias in aliases:
@@ -123,7 +123,7 @@ for alias in aliases:
 #        "28": "pause",
 #        "51": "pauseevent"
 #        }
-        
+
 dec_pkcommands = {}
 
 for command in pkcommands:
@@ -135,6 +135,3 @@ for command in pkcommands:
 #print dec_pkcommands
 
 pkcommands = pkcommands_and_aliases
-
-
-

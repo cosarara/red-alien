@@ -27,6 +27,7 @@ using_windows = False
 using_dynamic = False
 end_commands = ["end", "jump", "return"]
 
+
 def apply_defs(text_script):
     list_script = text_script.split("\n")
     for n, line in enumerate(list_script):
@@ -48,7 +49,7 @@ def apply_defs(text_script):
     return text_script
 
 
-def read_text_script(text_script, end_commands = ["end", "jump", "return"]):
+def read_text_script(text_script, end_commands=["end", "jump", "return"]):
     text_script = apply_defs(text_script)
     list_script = text_script.split("\n")
     #org = 0
@@ -89,7 +90,7 @@ def read_text_script(text_script, end_commands = ["end", "jump", "return"]):
                 offset = args
                 parsed_list.append(offset)
                 has_org = True
-                
+
             elif command == "#dyn" or command == "#dynamic":
                 if len(args) == 1:
                     global using_dynamic
@@ -137,8 +138,8 @@ def read_text_script(text_script, end_commands = ["end", "jump", "return"]):
                              "jumpstd or callstd.")
                     return None, error
                 operator = args[0]
-                operators = {"==":"1", "!=":"5", "<":"0", ">":"2",
-                                "<=":"3", ">=":"4"}
+                operators = {"==": "1", "!=": "5", "<": "0", ">": "2",
+                                "<=": "3", ">=": "4"}
                 if operator in operators:
                     operator = operators[operator]
                 words = [branch, operator, args[2]]
@@ -204,7 +205,7 @@ def compile_script(script_list):
                         arg = arg[2:]
                         arg = bytefy.num_to_bytes(arg)
                         if len(arg) / 2 > arg_len:
-                            error = ("Arg too long! " 
+                            error = ("Arg too long! "
                                      "We did something wrong preparsing... "
                                      "Arg: " + arg +
                                      "\nCommand: " + command)
@@ -225,7 +226,8 @@ def compile_script(script_list):
                             error = "No #dynamic statement"
                             return None, error
                         # If we still have dynamic offsets, this compilation
-                        # is just for calculating space, so we fill this with 00
+                        # is just for calculating space,
+                        # so we fill this with 00
                         arg = "08000000"
                         arg = bytefy.permutate(arg)
                         hexargs += arg
@@ -233,6 +235,9 @@ def compile_script(script_list):
         hex_scripts.append(hex_script)
 #    print hex_scripts
     return hex_scripts, None
+
+
+dynamic_start_offset = "800000"
 
 
 def put_offsets(hex_script, text_script, file_name):
@@ -270,7 +275,6 @@ def put_offsets(hex_script, text_script, file_name):
         print offset, "-", offset_with_free_space
     # TODO: Comprovar si ha quedat alguna direcció (en un argument) dinàmica
     return text_script, None
-
 
 
 def write_hex_script(hex_scripts, rom_file_name):
@@ -319,7 +323,8 @@ def decompile(file_name, offset, type_="script"):
             for offset_ in offsets_:
                 if (offset_[0][2:] not in decompiled_offsets
                     and offset_ not in offsets):
-                    print ("going to add " + str(offset_[0]) + " because it's not in "
+                    print ("going to add " + str(offset_[0])
+                           + " because it's not in "
                            + str(decompiled_offsets))
                     offsets += [offset_]
         if type_ == "text":
@@ -340,7 +345,7 @@ def decompile(file_name, offset, type_="script"):
 
 
 def decompile_script(romtext, offset, added_offsets,
-                     end_hex_commands = ["FF"]):
+                     end_hex_commands=["FF"]):
     print "decompiling..."
     # Preparem ROM text
     offsets = []
@@ -393,13 +398,14 @@ def decompile_script(romtext, offset, added_offsets,
             textscript += "#raw 0x" + hex_command
             i += 2
         textscript += "\n"
-        print "text_command = " + text_command + ", hex_command = " + hex_command
+        print ("text_command = " + text_command + ", hex_command = "
+               + hex_command)
     print "textscript =", textscript
     return textscript, offsets
-    
-    
-def decompile_movs(romtext, offset, end_commands = ["end", "jump", "return"],
-                     end_hex_commands = ["FE", "FF"]):
+
+
+def decompile_movs(romtext, offset, end_commands=["end", "jump", "return"],
+                   end_hex_commands=["FE", "FF"]):
     print "decompiling..."
     # Preparem ROM text
     print offset
@@ -423,7 +429,8 @@ def decompile_movs(romtext, offset, end_commands = ["end", "jump", "return"],
         textscript += "#raw 0x" + hex_command
         i += 2
         textscript += "\n"
-        print "text_command = " + text_command + ", hex_command = " + hex_command
+        print ("text_command = " + text_command + ", hex_command = "
+               + hex_command)
     print "textscript =", textscript
     return textscript, []
 

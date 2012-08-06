@@ -23,6 +23,5 @@
   ], 
   "project-type": "Python", 
   "postExecScript": "", 
-  "description": "A compiler/decompiler for the script system found in GBA pokemon games, to be used by ROM-Hackers.
-It is currently in alpha state, but it works."
+  "description": "A script compiler/decompiler."
 }
