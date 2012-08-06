@@ -1,0 +1,28 @@
+{
+  "mainFile": "main.py", 
+  "venv": "", 
+  "relatedProjects": [], 
+  "name": "asc", 
+  "license": "GNU General Public License v3", 
+  "url": "www.python.org", 
+  "pythonPath": "python", 
+  "preExecScript": "", 
+  "programParams": "c, test.pks", 
+  "PYTHONPATH": "", 
+  "supported-extensions": [
+    ".py", 
+    ".html", 
+    ".jpg", 
+    ".png", 
+    ".ui", 
+    ".css", 
+    ".json", 
+    ".js", 
+    ".ini", 
+    ".h"
+  ], 
+  "project-type": "Python", 
+  "postExecScript": "", 
+  "description": "A compiler/decompiler for the script system found in GBA pokemon games, to be used by ROM-Hackers.
+It is currently in alpha state, but it works."
+}
