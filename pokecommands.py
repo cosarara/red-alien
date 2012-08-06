@@ -63,7 +63,7 @@ pkcommands = {
         "subtractvar": {"hex": "18", "args": ("var, value", (2, 2))},
         "copyvar": {"hex": "19", "args": ("var, var", (2, 2))},
         "copyvarifnotzero": {"hex": "1A", "args": ("var, var", (2, 2))},
-        "comparebuffers": {"hex": "1B", "args": ("var, var", (2, 2))},
+        "comparebuffers": {"hex": "1B", "args": ("buffer, buffer", (2, 2))},
         "comparevartobyte": {"hex": "1C", "args": ("var, byte", (2, 1))},
         "comparevartofarbyte": {"hex": "1D", "args": ("var, adress", (2, 4))},
         # TODO: Afegir tots els que falten
