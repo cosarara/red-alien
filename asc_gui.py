@@ -15,7 +15,7 @@
 #    You should have received a copy of the GNU General Public License
 #    along with ASC.  If not, see <http://www.gnu.org/licenses/>.
 
-import pyse
+import asc
 from gi.repository import Gtk, GtkSource, GObject, Gdk
 import os
 

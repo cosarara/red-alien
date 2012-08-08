@@ -37,30 +37,30 @@ def read_table_decode(table_string):
     return dictionary
 
 
-def ascii_to_hex(string_, dictionary):
+def ascii_to_hex(astring, dictionary):
     trans_string = u''
     i = 0
-    while i < len(string_):
+    while i < len(astring):
     #for i in range(len(string)):
-        character = string_[i]
-        if character == "\\" and string_[i + 1] == "h":
+        character = astring[i]
+        if character == "\\" and astring[i + 1] == "h":
             #print "case1"
-            if (string_[i + 2] in string.hexdigits and
-                string_[i + 3] in string.hexdigits):
-                trans_string += (string_[i + 2] + string_[i + 3]).upper()
+            if (astring[i + 2] in string.hexdigits and
+                astring[i + 3] in string.hexdigits):
+                trans_string += (astring[i + 2] + astring[i + 3]).upper()
                 i += 3
         elif character in dictionary:
             #print "case normal"
             trans_string += dictionary[character]
-        elif string_[i:i + 2] in dictionary:
+        elif astring[i:i + 2] in dictionary:
             #print "case3"
-            trans_string += dictionary[string_[i:i + 2]]
+            trans_string += dictionary[astring[i:i + 2]]
             i += 1
         else:  # (not tested)
             length = 2
             while length < 10:
-                if string_[i:i + length] in dictionary:
-                    trans_string += dictionary[string_[i:i + length]]
+                if astring[i:i + length] in dictionary:
+                    trans_string += dictionary[astring[i:i + length]]
                     i += length - 1
                     break
                 else:
@@ -166,7 +166,7 @@ B3='
 B4='
 B5=[m]
 B6=[f]
-B7=?
+B7=€
 B8=,
 BA=/
 BB=A
