@@ -55,6 +55,7 @@ def read_text_script(text_script, end_commands=["end", "jump", "return"]):
     #org = 0
     org_i = 0
     has_org = False
+    dyn = False
     parsed_list = []
     for num, line in enumerate(list_script):
         line = line.rstrip(" ")
@@ -69,7 +70,7 @@ def read_text_script(text_script, end_commands=["end", "jump", "return"]):
         if command not in pk.pkcommands:
             error = ("ERROR: command not found in line " + str(num + 1) + ":" +
                      "\n" + str(line))
-            return None, error
+            return None, error, dyn
         if "args" in pk.pkcommands[command]:    # Si la comanda te args
             #print pk.pkcommands[command]["args"]
             arg_num = len(pk.pkcommands[command]["args"][1])
@@ -83,7 +84,7 @@ def read_text_script(text_script, end_commands=["end", "jump", "return"]):
              pk.pkcommands[command]['args'][0]:
                 error += "args needed: " + pk.pkcommands[command]['args'][0] \
                     + " " + str(pk.pkcommands[command]['args'][1])
-            return None, error
+            return None, error, dyn
         else:
             #print line
             if command == "#org":
@@ -97,14 +98,15 @@ def read_text_script(text_script, end_commands=["end", "jump", "return"]):
                     using_dynamic = True
                     global dynamic_start_offset
                     dynamic_start_offset = args[0]
+                    dyn = (True, args[0])
                 else:
                     error = "ERROR: #dyn/#dynamic statement needs offset"
-                    return None, error
+                    return None, error, dyn
 
             elif has_org is False:
                 error = ("ERROR: No #org found - " + str(num))
                 #print line
-                return None, error
+                return None, error, dyn
 
             elif command in end_commands or words == ["#raw", "0xFE"]:
                 #print "END"
@@ -124,7 +126,7 @@ def read_text_script(text_script, end_commands=["end", "jump", "return"]):
                 if len(args) != 3:
                     error = ("ERROR: syntax error on line " + str(num + 1) +
                            "\nArgument number wrong in 'if'")
-                    return None, error
+                    return None, error, dyn
                 if args[1] == "jump":
                     branch = "jumpif"
                 elif args[1] == "call":
@@ -136,7 +138,7 @@ def read_text_script(text_script, end_commands=["end", "jump", "return"]):
                 else:
                     error = ("ERROR: Command in 'if' must be jump, call, "
                              "jumpstd or callstd.")
-                    return None, error
+                    return None, error, dyn
                 operator = args[0]
                 operators = {"==": "1", "!=": "5", "<": "0", ">": "2",
                                 "<=": "3", ">=": "4"}
@@ -162,10 +164,10 @@ def read_text_script(text_script, end_commands=["end", "jump", "return"]):
                     print "and the arg is this: ", arg
                     error = ("ERROR: Arg too long (" + str(arg_len) + ", " +
                              str(this_arg_len) + ") on line " + str(num + 1))
-                    return None, error
+                    return None, error, dyn
         #print line
     #print parsed_list
-    return parsed_list, None
+    return parsed_list, None, dyn
 
 
 def compile_script(script_list):
@@ -240,14 +242,16 @@ def compile_script(script_list):
 dynamic_start_offset = "800000"
 
 
-def put_offsets(hex_script, text_script, file_name):
+def put_offsets(hex_script, text_script, file_name, dyn):
 #    print dynamic_start_offset
-    dynamic_start = int(dynamic_start_offset, 16) * 2
+    #dynamic_start = int(dynamic_start_offset, 16) * 2
+    dynamic_start = int(dyn, 16) * 2
     alen = 0
     rom_file_r = open(file_name, "rb")
     rom_text = rom_file_r.read()
     rom_file_r.close()
     rom_text = binascii.hexlify(rom_text).upper()
+    offsets_found_log = ''
     for i, script in enumerate(hex_script):
         offset = script[0]
         part = script[1]
@@ -272,9 +276,10 @@ def put_offsets(hex_script, text_script, file_name):
         text_script = text_script.replace(" " + offset + "\n",
                                           " " + offset_with_free_space + "\n")
         alen += length + 10
+        offsets_found_log += offset + ' - ' + offset_with_free_space + '\n'
         print offset, "-", offset_with_free_space
     # TODO: Comprovar si ha quedat alguna direcció (en un argument) dinàmica
-    return text_script, None
+    return text_script, None, offsets_found_log
 
 
 def write_hex_script(hex_scripts, rom_file_name):
@@ -323,9 +328,9 @@ def decompile(file_name, offset, type_="script"):
             for offset_ in offsets_:
                 if (offset_[0][2:] not in decompiled_offsets
                     and offset_ not in offsets):
-                    print ("going to add " + str(offset_[0])
-                           + " because it's not in "
-                           + str(decompiled_offsets))
+#                    print ("going to add " + str(offset_[0])
+#                           + " because it's not in "
+#                           + str(decompiled_offsets))
                     offsets += [offset_]
         if type_ == "text":
             text = decompile_text(romtext, offset)
@@ -342,6 +347,7 @@ def decompile(file_name, offset, type_="script"):
         decompiled_offsets = list(set(decompiled_offsets))
     print '----'
     print textscript.encode("utf-8")
+    return textscript
 
 
 def decompile_script(romtext, offset, added_offsets,
@@ -465,7 +471,7 @@ if len(sys.argv) > 1:
         script = open_script(sys.argv[2])
         #script = open_script("test.pks")
         #print script
-        preparsed_script, error = read_text_script(script)
+        preparsed_script, error, dyn = read_text_script(script)
         #print read_text_script("#org 0x80000\nmsgbox @lol\ncallstd 0x2")
         if error:
             print error
@@ -474,12 +480,14 @@ if len(sys.argv) > 1:
         if error:
             print error
             quit()
-        if using_dynamic:
+        #if using_dynamic:
+        if dyn[0]:
             print "going dynamic!"
-            script, error = put_offsets(hex_script, script, sys.argv[3])
+            script, error, log = put_offsets(hex_script, script,
+                                        sys.argv[3], dyn[1])
             #print script
             print "re-preparsing"
-            preparsed_script, error = read_text_script(script)
+            preparsed_script, error, dyn = read_text_script(script)
             if error:
                 print error
                 quit()
@@ -495,7 +503,7 @@ if len(sys.argv) > 1:
         script = open_script(sys.argv[2])
         #script = open_script("test.pks")
         #print script
-        preparsed_script, error = read_text_script(script)
+        preparsed_script, error, dyn = read_text_script(script)
 #        print preparsed_script
         #print read_text_script("#org 0x80000\nmsgbox @lol\ncallstd 0x2")
         if error:
@@ -506,13 +514,15 @@ if len(sys.argv) > 1:
         if error:
             print error
             quit()
-        if using_dynamic:
+#        if using_dynamic:
+        if dyn[0]:
             print "going dynamic!"
             #print hex_script
-            script, error = put_offsets(hex_script, script, sys.argv[3])
+            script, error, log = put_offsets(hex_script, script,
+                                        sys.argv[3], dyn[1])
             #print script
             print "re-preparsing"
-            preparsed_script, error = read_text_script(script)
+            preparsed_script, error, dyn = read_text_script(script)
             if error:
                 print error
                 quit()

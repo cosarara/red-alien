@@ -39,12 +39,13 @@ class scriptTextEditor:
 
         self.clipboard = Gtk.Clipboard.get(Gdk.SELECTION_CLIPBOARD)
 
-        self.buffer = self.editor.get_buffer()
+        self.editor.set_buffer(GtkSource.Buffer())
+        #self.buffer = self.editor.get_buffer()
 
-        self.buffer.connect("changed", self.onTextChanged)
+        #self.buffer.connect("changed", self.onTextChanged)
 
-        self.undo_stack = []
-        self.undo_index = 0
+        #self.undo_stack = []
+        #self.undo_index = 0
 
     def get_buffer_text(self, buffer_):
         iter_start = buffer_.get_start_iter()
@@ -71,9 +72,23 @@ class scriptTextEditor:
         # log to terminal window
         print message
         # create an error message dialog and display modally to the user
-        dialog = Gtk.MessageDialog(None,
-                Gtk.DialogFlags.MODAL | Gtk.DialogFlags.DESTROY_WITH_PARENT,
-                Gtk.MessageType.ERROR, Gtk.ButtonsType.OK, message)
+#        dialog = Gtk.MessageDialog(None,
+#                Gtk.DialogFlags.MODAL | Gtk.DialogFlags.DESTROY_WITH_PARENT,
+#                Gtk.MessageType.ERROR, Gtk.ButtonsType.OK, message)
+#        dialog.run()
+#        dialog.destroy()
+
+        dialog = Gtk.MessageDialog(self.window, 0, Gtk.MessageType.ERROR,
+            Gtk.ButtonsType.CANCEL, "ERROR!")
+        dialog.format_secondary_text(message)
+        dialog.run()
+        dialog.destroy()
+
+    def info_message(self, title, message):
+        print message
+        dialog = Gtk.MessageDialog(self.window, 0, Gtk.MessageType.INFO,
+                                   Gtk.ButtonsType.OK, title)
+        dialog.format_secondary_text(message)
         dialog.run()
         dialog.destroy()
 
@@ -224,6 +239,7 @@ class scriptTextEditor:
         self.rom_filename = self.get_open_filename()
 
     def onEditCut(self, widget):
+        print "aaa"
         buff = self.editor.get_buffer()
         buff.cut_clipboard(self.clipboard, True)
 
@@ -240,14 +256,19 @@ class scriptTextEditor:
         buff.delete_selection(False, True)
 
     def onEditUndo(self, widget):
-        pass
+        buff = self.editor.get_buffer()
+        buff.do_undo(buff)
 
     def onEditRedo(self, widget):
-        pass
+        buff = self.editor.get_buffer()
+        buff.do_redo(buff)
 
     def onROMDecompile(self, widget):
-        get_offset_dialog = Gtk.Dialog()
-        get_offset_dialog.set_modal(True)
+        # TODO: Save changes?
+        if not self.rom_filename:
+            self.error_message("ERROR: No ROM loaded!")
+            return
+        get_offset_dialog = getOffsetDialog(self.window)
 #        box = get_offset_dialog.get_content_area()
 #        box.Orientation = Gtk.Orientation.HORIZONTAL
 #        box.Orientation = Gtk.Orientation.VERTICAL
@@ -255,23 +276,73 @@ class scriptTextEditor:
 #        button2 = Gtk.Button()
 #        box.add(button1)
 #        box.add(button2)
-
         get_offset_dialog.show_all()
+        response = get_offset_dialog.run()
+        if response == Gtk.ResponseType.OK:
+            #print "The OK button was clicked"
+            decompile_type = get_offset_dialog.selected
+            print decompile_type
+            decompile_offset = get_offset_dialog.entry.get_text()
+            print decompile_offset, type(decompile_offset)
+#        elif response == Gtk.ResponseType.CANCEL:
+#            #print "The Cancel button was clicked"
+#            pass
+        else:
+            get_offset_dialog.destroy()
+            return
+        get_offset_dialog.destroy()
+
+        decompiled_script = asc.decompile(self.rom_filename, decompile_offset)
+        self.editor.set_sensitive(False)
+        buff = self.editor.get_buffer()
+        buff.set_text(decompiled_script)
+        buff.set_modified(False)
+        self.editor.set_sensitive(True)
+
 
     def onROMCompile(self, widget):
-        # disable text view while getting contents of buffer
+        if not self.rom_filename:
+            self.error_message("ERROR: No ROM loaded!")
+            return
         buff = self.editor.get_buffer()
         self.editor.set_sensitive(False)
         text = self.get_buffer_text(buff)
         self.editor.set_sensitive(True)
         script = text.replace("\r\n", "\n")
-        preparsed_script, error = pyse.read_text_script(script)
+        preparsed_script, error, dyn = asc.read_text_script(script)
         if error:
             self.error_message(error)
             return
         print preparsed_script
-        hex_script = pyse.compile_script()
+        hex_script, error = asc.compile_script(preparsed_script)
+        if error:
+            self.error_message(error)
+            return
         print hex_script
+        log = ''
+        if dyn[0]:
+            print "going dynamic!"
+            script, error, log = asc.put_offsets(hex_script, script,
+                                        self.rom_filename, dyn[1])
+            #print script
+            print "re-preparsing"
+            preparsed_script, error, dyn = asc.read_text_script(script)
+            if error:
+                self.error_message(error)
+                return
+            print "recompiling"
+            hex_script, error = asc.compile_script(preparsed_script)
+            if error:
+                self.error_message(error)
+                return
+            print "yay!"
+        asc.write_hex_script(hex_script, self.rom_filename)
+
+        if log:
+            self.info_message("#dyn log", log)
+
+        self.info_message("Done!", "Script compiled successfully")
+
 
     def onROMDebug(self, widget):
         pass
@@ -285,14 +356,59 @@ class scriptTextEditor:
     def onEditFindAndReplace(self, widget):
         pass
 
-    def onTextChanged(self, widget):
-        print "lalal"
-        text = self.get_buffer_text(self.buffer)
-        self.undo_stack.append(text)
-        self.undo_index += 1
-        if self.undo_idex > 100:
-            del self.undo_stack[0]
-            self.undo_index -= 1
+#    def onTextChanged(self, widget):
+#        print "lalal"
+#        text = self.get_buffer_text(self.buffer)
+#        self.undo_stack.append(text)
+#        self.undo_index += 1
+#        if self.undo_idex > 100:
+#            del self.undo_stack[0]
+#            self.undo_index -= 1
+
+
+class getOffsetDialog(Gtk.Dialog):
+
+    def __init__(self, parent):
+        Gtk.Dialog.__init__(self, "Script to decomplile", parent, 0,
+            (Gtk.STOCK_CANCEL, Gtk.ResponseType.CANCEL,
+             Gtk.STOCK_OK, Gtk.ResponseType.OK))
+        mainbox = self.get_content_area()
+        self.entry = Gtk.Entry()
+        label_offset = Gtk.Label("Offset: ")
+
+        hbox = Gtk.Box()
+        hbox.orientation = Gtk.Orientation.HORIZONTAL
+        hbox.pack_start(label_offset, True, False, 0)
+        hbox.pack_start(self.entry, True, False, 0)
+
+        self.selected = "script"
+        hbox_radios = Gtk.Box()
+
+        button1 = Gtk.RadioButton.new_with_label_from_widget(None, "Script")
+        button1.connect("toggled", self.on_button_toggled, "script")
+        hbox_radios.pack_start(button1, False, False, 0)
+
+        button2 = Gtk.RadioButton.new_with_mnemonic_from_widget(button1,
+                                                                "Text")
+        button2.connect("toggled", self.on_button_toggled, "text")
+        hbox_radios.pack_start(button2, False, False, 0)
+
+#        button3 = Gtk.RadioButton.new_with_mnemonic_from_widget(button1,
+#                                                                 "B_utton 3")
+#        button3.connect("toggled", self.on_button_toggled, "3")
+#        hbox_radios.pack_start(button3, False, False, 0)
+
+        mainbox.orientation = Gtk.Orientation.VERTICAL
+        mainbox.pack_start(hbox, True, False, 0)
+        mainbox.pack_end(hbox_radios, True, False, 0)
+        #self.set_modal(True)
+        #self.button = Gtk.Button(label="Click Here")
+
+    def on_button_toggled(self, button, name):
+        if button.get_active():
+            self.selected = name
+            print "Button", name, "was turned selected"
+
 
 if __name__ == "__main__":
     editor = scriptTextEditor()
