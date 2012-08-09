@@ -52,7 +52,7 @@ class scriptTextEditor:
 
         self.language_manager = GtkSource.LanguageManager.get_default()
         self.language_manager.set_search_path(["./", "./styles/"])
-        print self.language_manager.get_language_ids()
+        #print self.language_manager.get_language_ids()
         language = self.language_manager.get_language("pks")
         buff = GtkSource.Buffer()
         buff.set_language(language)
