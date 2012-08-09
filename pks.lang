@@ -5,7 +5,7 @@
 
 -->
 
-<language id="pksvscript" _name="PKSV" version="2.0" _section="Scripts">
+<language id="pks" _name="PKS" version="2.0" _section="Scripts">
   <metadata>
     <property name="globs">*.pks</property>
   </metadata>
@@ -13,20 +13,23 @@
   <styles>
     <style id="comment"       _name="Comment"           map-to="def:comment"/>
     <style id="string"        _name="String"            map-to="def:string"/>
-    <!--<style id="keyword"   _name="Keyword"           map-to="def:keyword"/>-->
-    <style id="commands"      _name="Command"           map-to="def:keyword"/>
+    <style id="dynamic"       _name="Dynamic"           map-to="def:shebang"/>
+    <style id="name"          _name="Name"              map-to="def:function"/>
+    <style id="statement"     _name="Statement"         map-to="def:statement"/>
+    <style id="keyword"       _name="Keyword"           map-to="def:keyword"/>
+    <style id="commands"      _name="Command"           map-to="def:type"/>
     <style id="constants"     _name="Common Defines"    map-to="def:special-constant"/>
     <style id="signal-name"   _name="Signal name"       map-to="def:constant"/>
   </styles>
   
   <definitions>
-    <context id="pksvscript">
+    <context id="pks">
       <include>
         <context id="string" style-ref="string">
           <start>=</start>
           <end>$</end>
         </context>
-        <context id="movdava" style-ref="string">
+        <context id="movdata" style-ref="string">
           <start>M </start>
           <end>end</end>
         </context>
@@ -34,11 +37,22 @@
           <start>'</start>
           <end>$</end>
         </context>
-        <context id="preprocessor" style-ref="preprocessor">
-          <start>#</start>
-          <end>$</end>
+        <context id="dynamic" style-ref="dynamic">
+          <match extended="true">
+                            (\#dyn|\#dynamic)\s
+          </match>
         </context>
-        <context id="command" style-ref="commands">
+        <context id="name" style-ref="name">
+          <match extended="true">
+                            @.*(\ |$)
+          </match>
+        </context>
+        <context id="statement" style-ref="statement" class="statement">
+          <!--<keyword>#org</keyword>-->
+          <start>#</start>
+          <end> </end>
+        </context>
+        <context id="command" style-ref="commands" class="command">
           <keyword>addpokemon</keyword>
           <keyword>applymovement</keyword>
           <keyword>call</keyword>
@@ -46,7 +60,7 @@
           <keyword>checkflag</keyword>
           <keyword>clearflag</keyword>
           <keyword>compare</keyword>
-          <keyword>copyvar</keyword>
+          <keyword>copyvars</keyword>
           <keyword>disappear</keyword>
           <keyword>end</keyword>
           <keyword>fadescreen</keyword>
