@@ -50,12 +50,10 @@ class scriptTextEditor:
 
         self.editor.set_buffer(GtkSource.Buffer())
 
-        #self.buffer = self.editor.get_buffer()
-
-        #self.buffer.connect("changed", self.onTextChanged)
-
-        #self.undo_stack = []
-        #self.undo_index = 0
+        menu_item_find = builder.get_object("menu_item_find")
+        menu_item_far = builder.get_object("menu_item_far")
+        menu_item_find.set_sensitive(False)
+        menu_item_far.set_sensitive(False)
 
     def get_buffer_text(self, buffer_):
         iter_start = buffer_.get_start_iter()
@@ -63,13 +61,30 @@ class scriptTextEditor:
         text = buffer_.get_text(iter_start, iter_end, 0)
         return text
 
-    def get_open_filename(self):
+    def get_open_filename(self, file_type="script"):
         filename = None
         chooser = Gtk.FileChooserDialog("Open File...", self.window,
                                         Gtk.FileChooserAction.OPEN,
                                         (Gtk.STOCK_CANCEL,
                                         Gtk.ResponseType.CANCEL,
                                          Gtk.STOCK_OPEN, Gtk.ResponseType.OK))
+
+        if file_type == "script":
+            filter_pks = Gtk.FileFilter()
+            filter_pks.set_name("Pokemon script")
+            filter_pks.add_pattern("*.pks")
+            chooser.add_filter(filter_pks)
+
+        if file_type == "rom":
+            filter_gba = Gtk.FileFilter()
+            filter_gba.set_name("GBA ROM Image")
+            filter_gba.add_pattern("*.gba")
+            chooser.add_filter(filter_gba)
+
+        filter_any = Gtk.FileFilter()
+        filter_any.set_name("Any files")
+        filter_any.add_pattern("*")
+        chooser.add_filter(filter_any)
 
         response = chooser.run()
         if response == Gtk.ResponseType.OK:
@@ -246,7 +261,7 @@ class scriptTextEditor:
             self.write_file(filename)
 
     def onFileLoadRom(self, widget):
-        self.rom_filename = self.get_open_filename()
+        self.rom_filename = self.get_open_filename("rom")
 
     def onEditCut(self, widget):
         print "aaa"
@@ -348,7 +363,12 @@ class scriptTextEditor:
         if mode == "compile":
             asc.write_hex_script(hex_script, self.rom_filename)
         else:
-            self.info_message("Script in hex", str(hex_script))
+            #self.info_message("Script in hex", str(hex_script))
+            hex_script_log = TextPopup(self.window, "Script in hex",
+                                       str(hex_script))
+            hex_script_log.show_all()
+            hex_script_log.run()
+            hex_script_log.destroy()
 
         if log:
             #self.info_message("#dyn log", log)
@@ -358,7 +378,7 @@ class scriptTextEditor:
             info.destroy()
 
         if mode == "compile":
-            self.info_message("Done!", "Script compiled and written"
+            self.info_message("Done!", "Script compiled and written "
                               "successfully")
         else:
             self.info_message("Done!", "No problems :)")
