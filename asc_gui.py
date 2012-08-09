@@ -15,6 +15,15 @@
 #    You should have received a copy of the GNU General Public License
 #    along with ASC.  If not, see <http://www.gnu.org/licenses/>.
 
+VERSION = "git version"
+GPLv3 = "GPLv3"
+try:
+    with open("GPL.txt", "r") as gplfile:
+        GPLv3 = gplfile.read()
+except IOError as e:
+    GPLv3 = ("GPL.txt not found - you can find it at "
+            "http://www.gnu.org/licenses/gpl.txt")
+
 import asc
 from gi.repository import Gtk, GtkSource, GObject, Gdk
 import os
@@ -40,6 +49,7 @@ class scriptTextEditor:
         self.clipboard = Gtk.Clipboard.get(Gdk.SELECTION_CLIPBOARD)
 
         self.editor.set_buffer(GtkSource.Buffer())
+
         #self.buffer = self.editor.get_buffer()
 
         #self.buffer.connect("changed", self.onTextChanged)
@@ -281,9 +291,7 @@ class scriptTextEditor:
         if response == Gtk.ResponseType.OK:
             #print "The OK button was clicked"
             decompile_type = get_offset_dialog.selected
-            print decompile_type
             decompile_offset = get_offset_dialog.entry.get_text()
-            print decompile_offset, type(decompile_offset)
 #        elif response == Gtk.ResponseType.CANCEL:
 #            #print "The Cancel button was clicked"
 #            pass
@@ -292,15 +300,15 @@ class scriptTextEditor:
             return
         get_offset_dialog.destroy()
 
-        decompiled_script = asc.decompile(self.rom_filename, decompile_offset)
+        decompiled_script = asc.decompile(self.rom_filename, decompile_offset,
+                                          decompile_type)
         self.editor.set_sensitive(False)
         buff = self.editor.get_buffer()
         buff.set_text(decompiled_script)
         buff.set_modified(False)
         self.editor.set_sensitive(True)
 
-
-    def onROMCompile(self, widget):
+    def compile_script(self, mode="compile"):
         if not self.rom_filename:
             self.error_message("ERROR: No ROM loaded!")
             return
@@ -336,19 +344,48 @@ class scriptTextEditor:
                 self.error_message(error)
                 return
             print "yay!"
-        asc.write_hex_script(hex_script, self.rom_filename)
+
+        if mode == "compile":
+            asc.write_hex_script(hex_script, self.rom_filename)
+        else:
+            self.info_message("Script in hex", str(hex_script))
 
         if log:
-            self.info_message("#dyn log", log)
+            #self.info_message("#dyn log", log)
+            info = TextPopup(self.window, "log", log)
+            info.show_all()
+            info.run()
+            info.destroy()
 
-        self.info_message("Done!", "Script compiled successfully")
+        if mode == "compile":
+            self.info_message("Done!", "Script compiled and written"
+                              "successfully")
+        else:
+            self.info_message("Done!", "No problems :)")
 
+    def onROMCompile(self, widget):
+        self.compile_script()
 
     def onROMDebug(self, widget):
-        pass
+        self.compile_script("debug")
 
     def onHelpAbout(self, widget):
-        pass
+        dialog = Gtk.AboutDialog() #self.window, 0, Gtk.MessageType.INFO,
+                                   #Gtk.ButtonsType.OK, title)
+        #print dir(dialog)
+        dialog.set_program_name("Advanced Script Compiler")
+        dialog.set_version(VERSION)
+        dialog.set_license(GPLv3)
+        dialog.set_copyright("Jaume Delclòs Coll (cosarara97) - "
+                             "cosa.rara97@gmail.com")
+        dialog.set_comments("ASC is a script compiler and decompiler for"
+                            " the script system found in GBA pokemon games.\n"
+                            "The language it uses is a mix between the one in"
+                            " XSE and the one in PKSV (it is intended to be"
+                            " compatible with both), and is constantly"
+                            " growing.")
+        dialog.run()
+        dialog.destroy()
 
     def onEditFind(self, widget):
         pass
@@ -356,14 +393,18 @@ class scriptTextEditor:
     def onEditFindAndReplace(self, widget):
         pass
 
-#    def onTextChanged(self, widget):
-#        print "lalal"
-#        text = self.get_buffer_text(self.buffer)
-#        self.undo_stack.append(text)
-#        self.undo_index += 1
-#        if self.undo_idex > 100:
-#            del self.undo_stack[0]
-#            self.undo_index -= 1
+
+class TextPopup(Gtk.Dialog):
+
+    def __init__(self, parent, title, content):
+        Gtk.Dialog.__init__(self, title, parent, 0,
+                           (Gtk.STOCK_OK, Gtk.ResponseType.OK))
+        mainbox = self.get_content_area()
+        view = Gtk.TextView()
+        view.set_editable(False)
+        buff = view.get_buffer()
+        buff.set_text(content)
+        mainbox.add(view)
 
 
 class getOffsetDialog(Gtk.Dialog):

@@ -55,7 +55,7 @@ def read_text_script(text_script, end_commands=["end", "jump", "return"]):
     #org = 0
     org_i = 0
     has_org = False
-    dyn = False
+    dyn = (False, 0)
     parsed_list = []
     for num, line in enumerate(list_script):
         line = line.rstrip(" ")
