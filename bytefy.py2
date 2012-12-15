@@ -26,10 +26,10 @@ def num_to_bytes(numstr):
 
 def permutate(bytes):
     if len(bytes) > 8:  # 32bits = 4 bytes = 4 hex digits
-        print("ERROR: Too many bytes for a 32 bit int")
+        print "ERROR: Too many bytes for a 32 bit int"
         return
     bytes_rev = ""
-    for i in range(len(bytes) // 2):
+    for i in range(len(bytes) / 2):
         pos = i * 2
         bytes_rev = bytes[pos:pos + 2] + bytes_rev
     #print bytes_rev

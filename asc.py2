@@ -15,29 +15,13 @@
 #    You should have received a copy of the GNU General Public License
 #    along with ASC.  If not, see <http://www.gnu.org/licenses/>.
 
-#import sys
+import sys
 import pokecommands as pk
 import binascii
 import text_translate
-import argparse
-#import bytefy
-parser = argparse.ArgumentParser(description='Advanced (Pokémon) Script Compiler',
-                                 formatter_class=argparse.RawTextHelpFormatter)
-subparsers = parser.add_subparsers(help='available commands:')
-parser_c = subparsers.add_parser('c', help='compile')
-parser_c.add_argument('rom', help='path to ROM image')
-parser_c.add_argument('script', help='path to pokemon script')
-parser_c.set_defaults(command='c')
-parser_b = subparsers.add_parser('b', help='debug')
-parser_b.add_argument('rom', help='path to ROM image')
-parser_b.add_argument('script', help='path to pokemon script')
-parser_b.set_defaults(command='b')
-parser_d = subparsers.add_parser('d', help='decompile')
-parser_d.add_argument('rom', help='path to ROM image')
-parser_d.add_argument('offset', help='where to decompile')
-parser_d.set_defaults(command='d')
+import bytefy
+# TODO: Implantar arg_len al decompilador <-- valid encara?
 
-args = parser.parse_args()
 
 using_windows = False
 using_dynamic = False
@@ -171,13 +155,13 @@ def read_text_script(text_script, end_commands=["end", "jump", "return"]):
                 #print "arg_len = " + str(arg_len)
                 #print arg
                 if arg[:2] == "0x":
-                    this_arg_len = len(arg[2:]) // 2
+                    this_arg_len = len(arg[2:]) / 2
                 else:
-                    this_arg_len = len(arg) // 2
+                    this_arg_len = len(arg) / 2
                 if this_arg_len > arg_len and arg[0] != "@":
-                    print("We wan't this:", arg_len)
-                    print("But we have this:", this_arg_len)
-                    print("and the arg is this: ", arg)
+                    print "We wan't this:", arg_len
+                    print "But we have this:", this_arg_len
+                    print "and the arg is this: ", arg
                     error = ("ERROR: Arg too long (" + str(arg_len) + ", " +
                              str(this_arg_len) + ") on line " + str(num + 1))
                     return None, error, dyn
@@ -189,7 +173,7 @@ def read_text_script(text_script, end_commands=["end", "jump", "return"]):
 def compile_script(script_list):
     hex_scripts = []
     for script in script_list:
-        hex_script = [script[0], b""]  # hex_script = [offset, ""]
+        hex_script = [script[0], ""]  # hex_script = [offset, ""]
         for line in script[1:]:
             command = line[0]
             args = line[1:]
@@ -198,58 +182,47 @@ def compile_script(script_list):
                 text_table = text_translate.table
                 # encoding table
                 e_table = text_translate.read_table_encode(text_table)
-                text = args[1:]
+                text = unicode(args[1:], "utf-8")
                 hex_script[1] = text_translate.ascii_to_hex(text, e_table)
             elif command == '#raw':
                 hexcommand = args[0]
 #                print hexcommand
                 # TODO: acabar això <-- ???
-                #if hexcommand[0:2] != "0x":
-                #    #print arg
-                #    hexcommand = hex(int(hexcommand))
-                #hexcommand = hexcommand[2:]
-                #hexcommand = bytefy.num_to_bytes(hexcommand)
-                #hex_script[1] += hexcommand
-                hex_script[1] += int(hexcommand, 16).to_bytes(1, "little")
+                if hexcommand[0:2] != "0x":
+                    #print arg
+                    hexcommand = hex(int(hexcommand))  # hex() adds the 0x
+                hexcommand = hexcommand[2:]
+                hexcommand = bytefy.num_to_bytes(hexcommand)
+                hex_script[1] += hexcommand
             else:
                 hexcommand = pk.pkcommands[command]["hex"]
-                hexargs = bytearray()
+                hexargs = ""
                 for i, arg in enumerate(args):
                     if arg[0] != "@":
                         arg_len = pk.pkcommands[command]["args"][1][i]
                         #print arg_len
                         if arg[0:2] != "0x":
                             #print arg
-                            arg = (int(arg) & 0xffffff)
-                        else:
-                            arg = (int(arg, 16) & 0xffffff)
-                        if ("offset" in pk.pkcommands[command] and
-                            pk.pkcommands[command]["offset"][0] == i):
-                            arg |= 0x8000000
-                        #if len(arg.to_bytes("little")) // 2 > arg_len:
-                        try:
-                            arg_bytes = arg.to_bytes(arg_len, "little")
-                        except OverflowError:
-                            print(script)
-                            print(line)
+                            arg = hex(int(arg))  # hex() adds the 0x
+                        arg = arg[2:]
+                        arg = bytefy.num_to_bytes(arg)
+                        if len(arg) / 2 > arg_len:
                             error = ("Arg too long! "
                                      "We did something wrong preparsing... "
-                                     "Arg: " + hex(arg) +
+                                     "Arg: " + arg +
                                      "\nCommand: " + command)
                             return None, error
-                        #if len(arg) // 2 < arg_len:
-                        #    if len(arg) // 2 < 4 and arg_len == 4:
-                        #        arg = (b"\x08" + b"\x00" *
-                        #               (arg_len - len(arg)) + arg
-                        #    else:
-                        #        arg = b"\x00" * (arg_len - len(arg) // 2) + arg
+                        if len(arg) / 2 < arg_len:
+                            if len(arg) / 2 < 4 and arg_len == 4:
+                                arg = "08" + "00" * (arg_len - len(arg)) + arg
+                            else:
+                                arg = "00" * (arg_len - len(arg) / 2) + arg
 #                                print "arg with 00", arg
                         # Si hi ha alguna cosa a afegir davant les comandes
-                        #arg = bytefy.permutate(arg)
+                        arg = bytefy.permutate(arg)
                         if len(pk.pkcommands[command]["args"]) == 3:
-                            arg_bytes = (pk.pkcommands[command]["args"][2] +
-                                         arg_bytes)
-                        hexargs += arg_bytes
+                            arg = pk.pkcommands[command]["args"][2] + arg
+                        hexargs += arg
                     else:
                         if not using_dynamic:
                             error = "No #dynamic statement"
@@ -257,9 +230,10 @@ def compile_script(script_list):
                         # If we still have dynamic offsets, this compilation
                         # is just for calculating space,
                         # so we fill this with 00
-                        arg = b"\x00\x00\x00\x08"
+                        arg = "08000000"
+                        arg = bytefy.permutate(arg)
                         hexargs += arg
-                hex_script[1] += hexcommand.to_bytes(1, "little") + hexargs
+                hex_script[1] += hexcommand + hexargs
         hex_scripts.append(hex_script)
 #    print hex_scripts
     return hex_scripts, None
@@ -268,43 +242,42 @@ def compile_script(script_list):
 dynamic_start_offset = "800000"
 
 
-def put_offsets(hex_chunks, text_script, file_name, dyn):
+def put_offsets(hex_script, text_script, file_name, dyn):
 #    print dynamic_start_offset
     #dynamic_start = int(dynamic_start_offset, 16) * 2
-    dynamic_start = int(dyn, 16)
+    dynamic_start = int(dyn, 16) * 2
     alen = 0
     rom_file_r = open(file_name, "rb")
-    rom_bytes = rom_file_r.read()
+    rom_text = rom_file_r.read()
     rom_file_r.close()
-    #rom_text = binascii.hexlify(rom_text).upper()
+    rom_text = binascii.hexlify(rom_text).upper()
     offsets_found_log = ''
-    for i, chunk in enumerate(hex_chunks):
-        offset = chunk[0]
-        part = chunk[1] # The hex chunk we have to put somewhere
+    for i, script in enumerate(hex_script):
+        offset = script[0]
+        part = script[1]
+        #print offset
         if offset[0] != "@":
             continue
-        length = len(part)
-        free_space = b"\xFF" * length
-        offset_with_free_space = rom_bytes.find(free_space,
-                                                dynamic_start + alen)
-        if offset_with_free_space == -1:
-            print(len(rom_bytes))
-            print(len(free_space))
-            print(dynamic_start)
-            print(alen)
-            print("No free space to put script.")
-            exit(1)
+        length = len(part) / 2
+#        print length
+        free_space = "FF" * (length)
+#        if length < 10: print free_space
+#        print alen
+        offset_with_free_space = (rom_text.find(free_space, dynamic_start)
+                                  + (alen * 2))
 #        print offset_with_free_space, free_space
-        #hex_script[i][0] = offset_with_free_space
+        offset_with_free_space = hex(offset_with_free_space / 2)[2:].upper()
+        offset_with_free_space = "0x" + offset_with_free_space
+#        print offset_with_free_space, free_space
+        hex_script[i][0] = offset_with_free_space
 #        print length, "in", offset_with_free_space
         text_script = text_script.replace(" " + offset + " ",
-                                          " " + hex(offset_with_free_space) + " ")
+                                          " " + offset_with_free_space + " ")
         text_script = text_script.replace(" " + offset + "\n",
-                                          " " + hex(offset_with_free_space) + "\n")
+                                          " " + offset_with_free_space + "\n")
         alen += length + 10
-        offsets_found_log += (offset + ' - ' +
-                              hex(offset_with_free_space) + '\n')
-        #print(offset, "-", offset_with_free_space)
+        offsets_found_log += offset + ' - ' + offset_with_free_space + '\n'
+        print offset, "-", offset_with_free_space
     # TODO: Comprovar si ha quedat alguna direcció (en un argument) dinàmica
     return text_script, None, offsets_found_log
 
@@ -312,158 +285,80 @@ def put_offsets(hex_chunks, text_script, file_name, dyn):
 def write_hex_script(hex_scripts, rom_file_name):
     file_name = rom_file_name
     for script in hex_scripts:
-        with open(file_name, "rb") as f:
-            rom_bytes = f.read()
-        rom_ba = bytearray(rom_bytes)
-        offset = int(script[0], 16)
+#        rom_file = open_rom()
+        rom_file_r = open(file_name, "rb")
+        rom_text = rom_file_r.read()
+        rom_file_w = open(file_name, "wb")
+        offset = script[0]
+#        print offset
         hex_script = script[1]
-        print("chunk length = " + hex(len(hex_script)))
-        rom_ba[offset:offset+len(hex_script)] = hex_script
-
-        with open(file_name, "wb") as f:
-            f.write(rom_ba)
-
-
-        #rom_file_r = open(file_name, "rb")
-        #rom_text = rom_file_r.read()
-        #rom_file_w = open(file_name, "wb")
-        #offset = script[0]
-#       # print offset
-        #hex_script = script[1]
-        #print("chunk length = " + str(len(hex_script) // 2))
-        #b_script = binascii.unhexlify(hex_script)
-        #rom_text_first_part = rom_text[:int(offset, 16)]
-#       # print binascii.b2a_hex(rom_text_first_part)
-        #rom_text_final_part = rom_text[int(offset, 16) + len(b_script):]
-        #new_rom = rom_text_first_part + b_script + rom_text_final_part
-#       # print binascii.b2a_hex(new_rom)
-        #rom_file_w.write(new_rom)
-        #rom_file_r.close()
-        #rom_file_w.close()
+        print "chunk length = " + str(len(hex_script) / 2)
+        b_script = binascii.unhexlify(hex_script)
+        rom_text_first_part = rom_text[:int(offset, 16)]
+#        print binascii.b2a_hex(rom_text_first_part)
+        rom_text_final_part = rom_text[int(offset, 16) + len(b_script):]
+        new_rom = rom_text_first_part + b_script + rom_text_final_part
+#        print binascii.b2a_hex(new_rom)
+        rom_file_w.write(new_rom)
+        rom_file_r.close()
+        rom_file_w.close()
 
 
 def decompile(file_name, offset, type_="script"):
     # Preparem ROM text
-    print("'file name = " + file_name)
-    print("'offset = " + hex(offset))
-    with open(file_name, "rb") as f:
-        rombytes = f.read()
+    print "file name = " + file_name
+    print "offset = " + offset
+    romfile = open(file_name)
+    romtext = romfile.read()
+    romtext = binascii.hexlify(romtext).upper()
     offsets = [(offset, type_)]
     textscript = ''
     decompiled_offsets = []
     while offsets:
-        print(offsets[0])
-        offset = offsets[0][0] & 0xffffff
-        #if len(hex(offset)[2:]) == 8 and offset[:2] == "08":
-        #    offset = offset[2:]
+        print offsets[0]
+        offset = offsets[0][0]
+        if len(offset) == 8 and offset[:2] == "08":
+            offset = offset[2:]
         type_ = offsets[0][1]
         if type_ == "script":
-            textscript_, offsets_ = decompile_script(rombytes, offset, offsets)
-            textscript += ("#org " + hex(offset) + "\n" +
-                           textscript_ + "\n")
+            textscript_, offsets_ = decompile_script(romtext, offset, offsets)
+            textscript += "#org 0x" + bytefy.bytes_to_num(offset) + "\n" + \
+                          textscript_ + "\n"
 #            added_offsets = list(set(offsets + offsets_))
             for offset_ in offsets_:
-                if (offset_[0] & 0xffffff not in decompiled_offsets
+                if (offset_[0][2:] not in decompiled_offsets
                     and offset_ not in offsets):
 #                    print ("going to add " + str(offset_[0])
 #                           + " because it's not in "
 #                           + str(decompiled_offsets))
                     offsets += [offset_]
         if type_ == "text":
-            text = decompile_text(rombytes, offset)
-            textscript += ("#org " + hex(offset) +
-                           "\n= " + text + "\n\n")
+            text = decompile_text(romtext, offset)
+            textscript += "#org 0x" + bytefy.bytes_to_num(offset) + \
+                          "\n= " + text + "\n\n"
         if type_ == "movs":
-            print("movs")
-            textscript_, offsets_ = decompile_movs(rombytes, offset)
-            textscript += ("#org " + hex(offset) + "\n" +
-                           textscript_ + "\n")
+            print "movs"
+            textscript_, offsets_ = decompile_movs(romtext, offset)
+            textscript += "#org 0x" + bytefy.bytes_to_num(offset) + "\n" + \
+                          textscript_ + "\n"
         del offsets[0]
         decompiled_offsets.append(offset)
         # Removing duplicates doesn't hurt, right?
         decompiled_offsets = list(set(decompiled_offsets))
-    print('----')
-    #print(textscript)
+    print '----'
+    print textscript.encode("utf-8")
     return textscript
 
 
-def decompile_script(rombytes, offset, added_offsets,
-                     end_hex_commands=[0xFF]):
-    print("decompiling...")
-    offset &= 0xffffff
+def decompile_script(romtext, offset, added_offsets,
+                     end_hex_commands=["FF"]):
+    print "decompiling..."
     # Preparem ROM text
     offsets = []
-    print(offset)
-    #hexscript = romtext[int(offset, 16) * 2:]
-    hexscript = rombytes
-    i = offset
-    textscript = ""
-#        finished = False
-    text_command = ""
-    hex_command = 0
-#    while text_command not in end_commands and \
-#    (hex_command in pk.dec_pkcommands or hex_command == ""):
-    try:
-        hex_command = hexscript[i]
-    except IndexError:
-        return textscript, offsets
-    while (text_command not in end_commands and
-           hex_command not in end_hex_commands):
-        try:
-            hex_command = hexscript[i]
-        except IndexError:
-            break
-        #if not hex_command:
-        #    break
-        print("hex command = " + hex(hex_command))
-        if hex_command in pk.dec_pkcommands:
-            text_command = pk.dec_pkcommands[hex_command]
-            print(text_command)
-            textscript += text_command
-            i += 1
-            command_data = pk.pkcommands[text_command]
-            if "args" in pk.pkcommands[text_command]:
-                if len(command_data["args"]) == 3:
-                    i += len(command_data["args"][2])
-                for n, arg_len in enumerate(command_data["args"][1]):
-                    # loop tantes vegades com arg's hi ha
-                    # afegir cada arg
-                    # 2 = el que ocupa la commanda
-                    #i += 2
-                    arg = hexscript[i:i + arg_len]
-                    #arg = bytefy.permutate(arg)
-                    arg = int.from_bytes(arg, "little")
-                    if "offset" in command_data:
-                        if command_data["offset"][0] == n:
-                            offset_to_add = arg
-                            offset_to_add_type = command_data["offset"][1]
-                            tuple_to_add = (offset_to_add, offset_to_add_type)
-                            if tuple_to_add not in added_offsets:
-                                offsets.append(tuple_to_add)
-                    #arg = bytefy.bytes_to_num(arg)
-                    textscript += " " + hex(arg)
-                    i += arg_len
-                    # i sumar a i (index)
-        else:
-            #print(hex_command in pk.dec_pkcommands)
-            text_command = "#raw"
-            textscript += "#raw " + hex(hex_command)
-            i += 1
-        textscript += "\n"
-        print("text_command = " + text_command + ", hex_command = "
-               + hex(hex_command))
-    #print("textscript =", textscript)
-    return textscript, offsets
-
-
-def decompile_movs(romtext, offset, end_commands=["end", "jump", "return"],
-                   end_hex_commands=[0xFE, 0xFF]):
-    print("decompiling...")
-    # Preparem ROM text
-    print(offset)
+    print offset
     #hexscript = romtext[int(offset, 16) * 2:]
     hexscript = romtext
-    i = offset
+    i = int(offset, 16) * 2
     textscript = ""
 #        finished = False
     text_command = ""
@@ -472,32 +367,90 @@ def decompile_movs(romtext, offset, end_commands=["end", "jump", "return"],
 #    (hex_command in pk.dec_pkcommands or hex_command == ""):
     while (text_command not in end_commands and
            hex_command not in end_hex_commands):
-        try:
-            hex_command = hexscript[i]
-        except IndexError:
+        hex_command = hexscript[i:i + 2]
+        if not hex_command:
+            break
+        print "hex command = " + hex_command
+        if hex_command in pk.dec_pkcommands:
+            text_command = pk.dec_pkcommands[hex_command]
+            print text_command
+            textscript += text_command
+            i += 2
+            command_data = pk.pkcommands[text_command]
+            if "args" in pk.pkcommands[text_command]:
+                if len(command_data["args"]) == 3:
+                    i += 2
+                for n, arg_len in enumerate(command_data["args"][1]):
+                    # loop tantes vegades com arg's hi ha
+                    # afegir cada arg
+                    # 2 = el que ocupa la commanda
+                    #i += 2
+                    arg = hexscript[i:i + arg_len * 2]
+                    arg = bytefy.permutate(arg)
+                    if "offset" in command_data:
+                        if command_data["offset"][0] == n:
+                            offset_to_add = arg
+                            offset_to_add_type = command_data["offset"][1]
+                            tuple_to_add = (offset_to_add, offset_to_add_type)
+                            if tuple_to_add not in added_offsets:
+                                offsets.append(tuple_to_add)
+                    arg = bytefy.bytes_to_num(arg)
+                    textscript += " 0x" + arg
+                    i += arg_len * 2
+                    # i sumar a i (index)
+        else:
+            print hex_command in pk.dec_pkcommands
+            text_command = "#raw"
+            textscript += "#raw 0x" + hex_command
+            i += 2
+        textscript += "\n"
+        print ("text_command = " + text_command + ", hex_command = "
+               + hex_command)
+    print "textscript =", textscript
+    return textscript, offsets
+
+
+def decompile_movs(romtext, offset, end_commands=["end", "jump", "return"],
+                   end_hex_commands=["FE", "FF"]):
+    print "decompiling..."
+    # Preparem ROM text
+    print offset
+    #hexscript = romtext[int(offset, 16) * 2:]
+    hexscript = romtext
+    i = int(offset, 16) * 2
+    textscript = ""
+#        finished = False
+    text_command = ""
+    hex_command = ""
+#    while text_command not in end_commands and \
+#    (hex_command in pk.dec_pkcommands or hex_command == ""):
+    while text_command not in end_commands and \
+                                        hex_command not in end_hex_commands:
+        hex_command = hexscript[i:i + 2]
+        if hex_command == "":
             break
 #        print i, len(hexscript)
-        print("hex command = " + hex(hex_command))
+        print "hex command = " + hex_command
         text_command = "#raw"
-        textscript += "#raw " + hex(hex_command)
-        i += 1
+        textscript += "#raw 0x" + hex_command
+        i += 2
         textscript += "\n"
-        print("text_command = " + text_command + ", hex_command = "
-               + hex(hex_command))
-    print("textscript =", textscript)
+        print ("text_command = " + text_command + ", hex_command = "
+               + hex_command)
+    print "textscript =", textscript
     return textscript, []
 
 
 def decompile_text(romtext, offset):
-    start = offset
-    end = start + romtext[start:].find(b"\xff")
+    start = int(offset, 16) * 2
+    end = start + romtext[start:].find("FF")
     text = romtext[start:end]
-    print(text, start, end, hex(start), hex(end))
+    print text, start, end, hex(start / 2), hex(end / 2)
     text_table = text_translate.table
     # decoding table
     d_table = text_translate.read_table_decode(text_table)
     translated_text = text_translate.hex_to_ascii(text, d_table)
-    print(translated_text)
+    print translated_text.encode("utf-8")
     return translated_text
 
 
@@ -513,83 +466,78 @@ def open_script(file_name):
     script_text = script_text.replace("\r\n", "\n")
     return script_text
 
-def main():
-    if args.command == "c":
-        script = open_script(args.script)
+if len(sys.argv) > 1:
+    if sys.argv[1] == "c":
+        script = open_script(sys.argv[2])
         #script = open_script("test.pks")
         #print script
         preparsed_script, error, dyn = read_text_script(script)
         #print read_text_script("#org 0x80000\nmsgbox @lol\ncallstd 0x2")
         if error:
-            print(error)
+            print error
             quit()
         hex_script, error = compile_script(preparsed_script)
         if error:
-            print(error)
+            print error
             quit()
         #if using_dynamic:
         if dyn[0]:
-            print("going dynamic!")
+            print "going dynamic!"
             script, error, log = put_offsets(hex_script, script,
-                                             args.rom, dyn[1])
+                                        sys.argv[3], dyn[1])
             #print script
-            print("re-preparsing")
+            print "re-preparsing"
             preparsed_script, error, dyn = read_text_script(script)
             if error:
-                print(error)
+                print error
                 quit()
-            print("recompiling")
+            print "recompiling"
             hex_script, error = compile_script(preparsed_script)
             if error:
-                print(error)
+                print error
                 quit()
-            print("yay!")
-        write_hex_script(hex_script, args.rom)
-        print(log)
+            print "yay!"
+        write_hex_script(hex_script, sys.argv[3])
 
-    elif args.command == "b":
-        script = open_script(args.script)
+    elif sys.argv[1] == "b":
+        script = open_script(sys.argv[2])
         #script = open_script("test.pks")
         #print script
         preparsed_script, error, dyn = read_text_script(script)
 #        print preparsed_script
         #print read_text_script("#org 0x80000\nmsgbox @lol\ncallstd 0x2")
         if error:
-            print(error)
+            print error
             quit()
         hex_script, error = compile_script(preparsed_script)
-        print(hex_script)
+        print hex_script
         if error:
-            print(error)
+            print error
             quit()
 #        if using_dynamic:
         if dyn[0]:
-            print("going dynamic!")
+            print "going dynamic!"
             #print hex_script
             script, error, log = put_offsets(hex_script, script,
-                                             args.rom, dyn[1])
+                                        sys.argv[3], dyn[1])
             #print script
-            print("re-preparsing")
+            print "re-preparsing"
             preparsed_script, error, dyn = read_text_script(script)
             if error:
-                print(error)
+                print error
                 quit()
-            print("recompiling")
+            print "recompiling"
             hex_script, error = compile_script(preparsed_script)
             if error:
-                print(error)
+                print error
                 quit()
-            print("yay!")
-        print(hex_script)
-        print(log)
+            print "yay!"
+        print hex_script
+        #write_hex_script(hex_script, sys.argv[3])
 
-    elif args.command == "d":
-        print(decompile(args.rom, int(args.offset, 16)))
+    elif sys.argv[1] == "d":
+        #decompile_script(sys.argv[2], sys.argv[3])
+        decompile(sys.argv[2], sys.argv[3])
 
-
-
-
-if __name__ == "__main__":
-    main()
-
-
+    else:
+        print "ERROR"

@@ -24,7 +24,7 @@ def read_table_encode(table_string):
     dictionary = {}
     for line in table:
         line_table = line.split("=")
-        dictionary[line_table[1]] = int(line_table[0], 16)
+        dictionary[line_table[1]] = line_table[0]
     return dictionary
 
 
@@ -33,12 +33,12 @@ def read_table_decode(table_string):
     dictionary = {}
     for line in table:
         line_table = line.split("=")
-        dictionary[int(line_table[0], 16)] = line_table[1]
+        dictionary[line_table[0]] = line_table[1]
     return dictionary
 
 
 def ascii_to_hex(astring, dictionary):
-    trans_string = b''
+    trans_string = u''
     i = 0
     while i < len(astring):
     #for i in range(len(string)):
@@ -47,20 +47,20 @@ def ascii_to_hex(astring, dictionary):
             #print "case1"
             if (astring[i + 2] in string.hexdigits and
                 astring[i + 3] in string.hexdigits):
-                trans_string += (str(int(astring[i+2:i+4], 16))).encode('utf-8')
+                trans_string += (astring[i + 2] + astring[i + 3]).upper()
                 i += 3
         elif character in dictionary:
             #print "case normal"
-            trans_string += bytes((dictionary[character],))
+            trans_string += dictionary[character]
         elif astring[i:i + 2] in dictionary:
             #print "case3"
-            trans_string += bytes((dictionary[astring[i:i + 2]],))
+            trans_string += dictionary[astring[i:i + 2]]
             i += 1
         else:  # (not tested)
             length = 2
             while length < 10:
                 if astring[i:i + length] in dictionary:
-                    trans_string += bytes((dictionary[astring[i:i + length]],))
+                    trans_string += dictionary[astring[i:i + length]]
                     i += length - 1
                     break
                 else:
@@ -70,14 +70,14 @@ def ascii_to_hex(astring, dictionary):
 
 
 def hex_to_ascii(string, dictionary):
-    trans_string = ''
-    for i in range(len(string)):
-        pos = i
-        byte = string[pos]
+    trans_string = u''
+    for i in range(len(string) / 2):
+        pos = i * 2
+        byte = string[pos:pos + 2]
         if byte in dictionary:
             trans_string += dictionary[byte]
         else:
-            trans_string += "\\h" + hex(byte)[2:]
+            trans_string += "\\h" + byte
     return trans_string
 
 table = u"00= " u"""
