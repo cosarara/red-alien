@@ -85,7 +85,7 @@ class Window(QtGui.QMainWindow):
         else:
             fn = self.file_name
         with open(fn, 'w') as f:
-            f.write(self.ui.textEdit.toPlainText())
+            f.write(self.ui.textEdit.text())
         self.ui.statusbar.showMessage("file saved as " + fn)
 
     def load_rom(self):
@@ -136,7 +136,7 @@ class Window(QtGui.QMainWindow):
             return
         with open(self.rom_file_name, 'rb') as f:        
             self.rom_contents = f.read()
-        script = str(self.ui.textEdit.toPlainText())
+        script = str(self.ui.textEdit.text())
         script = script.replace("\r\n", "\n")
         preparsed_script, error, dyn = asc.read_text_script(script)
         if error:
