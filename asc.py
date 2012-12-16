@@ -47,15 +47,21 @@ def apply_defs(text_script):
     #print text_script
     return text_script
 
+# Here we'll make the compiler really advanced :)
+def advanced_preparsing(text_script):
+    return text_script
 
+# The basic language pre-parser
 def read_text_script(text_script, end_commands=["end", "jump", "return"]):
     text_script = apply_defs(text_script)
+    text_script = advanced_preparsing(text_script)
     list_script = text_script.split("\n")
     #org = 0
     org_i = 0
     has_org = False
     dyn = (False, 0)
     parsed_list = []
+
     for num, line in enumerate(list_script):
         line = line.rstrip(" ")
         if "'" in line:                # Eliminem commentaris
@@ -63,29 +69,34 @@ def read_text_script(text_script, end_commands=["end", "jump", "return"]):
             line = line.rstrip(" ")
         if line == "":
             continue
-        words = line.split(" ")                 # Separem paraules
+        if line[0] == ":": # Labels for goto's
+            label_list.append(line, parsed_list[0]) 
+            parsed_list.append(line)
+            continue
+
+        words = line.split(" ")
         command = words[0]
         args = words[1:]
+
         if command not in pk.pkcommands:
             error = ("ERROR: command not found in line " + str(num + 1) + ":" +
                      "\n" + str(line))
             return None, error, dyn
-        if "args" in pk.pkcommands[command]:    # Si la comanda te args
-            #print pk.pkcommands[command]["args"]
+        if "args" in pk.pkcommands[command]:    # if command has args
             arg_num = len(pk.pkcommands[command]["args"][1])
         else:
             arg_num = 0
-#        print "args needed by command", command, ":", arg_num
+
         if len(args) != arg_num and command != '=':
             error = "ERROR: wrong argument number in line " + str(num + 1)
             error += "\nargs given: " + str(len(args))
-            if pk.pkcommands[command]['args'] and \
-             pk.pkcommands[command]['args'][0]:
-                error += "args needed: " + pk.pkcommands[command]['args'][0] \
-                    + " " + str(pk.pkcommands[command]['args'][1])
+            if (pk.pkcommands[command]['args'] and
+                pk.pkcommands[command]['args'][0]):
+                error += ("args needed: " + pk.pkcommands[command]['args'][0]
+                          + " " + str(pk.pkcommands[command]['args'][1]))
             return None, error, dyn
+
         else:
-            #print line
             if command == "#org":
                 offset = args
                 parsed_list.append(offset)
@@ -172,7 +183,8 @@ def read_text_script(text_script, end_commands=["end", "jump", "return"]):
 def compile_script(script_list):
     hex_scripts = []
     for script in script_list:
-        hex_script = [script[0], b""]  # hex_script = [offset, ""]
+        hex_script = [script[0], b"", []]  # hex_script = [offset, "bytes",
+                                           #               [labels]]
         for line in script[1:]:
             command = line[0]
             args = line[1:]
@@ -185,20 +197,14 @@ def compile_script(script_list):
                 hex_script[1] = text_translate.ascii_to_hex(text, e_table)
             elif command == '#raw':
                 hexcommand = args[0]
-#                print hexcommand
-                # TODO: acabar això <-- ???
-                #if hexcommand[0:2] != "0x":
-                #    #print arg
-                #    hexcommand = hex(int(hexcommand))
-                #hexcommand = hexcommand[2:]
-                #hexcommand = bytefy.num_to_bytes(hexcommand)
-                #hex_script[1] += hexcommand
                 hex_script[1] += int(hexcommand, 16).to_bytes(1, "little")
+            elif command[0] == ":":
+                hex_script[2].append([command, len(hex_script[1])])
             else:
                 hexcommand = pk.pkcommands[command]["hex"]
                 hexargs = bytearray()
                 for i, arg in enumerate(args):
-                    if arg[0] != "@":
+                    if arg[0] != "@" and arg[0] != ":":
                         arg_len = pk.pkcommands[command]["args"][1][i]
                         #print arg_len
                         if arg[0:2] != "0x":
@@ -234,13 +240,14 @@ def compile_script(script_list):
                                          arg_bytes)
                         hexargs += arg_bytes
                     else:
-                        if not using_dynamic:
+                        if arg[0] == "@" and not using_dynamic:
                             error = "No #dynamic statement"
                             return None, error
                         # If we still have dynamic offsets, this compilation
                         # is just for calculating space,
                         # so we fill this with 00
-                        arg = b"\x00\x00\x00\x08"
+                        arg = b"\x00\x00\x00\x08" # Dummy bytes, so we can
+                                                  # size and then replace
                         hexargs += arg
                 hex_script[1] += hexcommand.to_bytes(1, "little") + hexargs
         hex_scripts.append(hex_script)
@@ -262,8 +269,17 @@ def put_offsets(hex_chunks, text_script, file_name, dyn):
     #rom_text = binascii.hexlify(rom_text).upper()
     offsets_found_log = ''
     for i, chunk in enumerate(hex_chunks):
+        for label in chunk[2]:
+            name = label[0]
+            pos = chunk[0] + label[1]
+            text_script = text_script.replace(" " + name + " ",
+                                              " " + pos + " ")
+            text_script = text_script.replace(" " + name + "\n",
+                                              " " + pos + "\n")
+    for i, chunk in enumerate(hex_chunks):
         offset = chunk[0]
         part = chunk[1] # The hex chunk we have to put somewhere
+        labels = chunk[2]
         if offset[0] != "@":
             continue
         length = len(part)
@@ -277,9 +293,7 @@ def put_offsets(hex_chunks, text_script, file_name, dyn):
             print(alen)
             print("No free space to put script.")
             exit(1)
-#        print offset_with_free_space, free_space
         #hex_script[i][0] = offset_with_free_space
-#        print length, "in", offset_with_free_space
         text_script = text_script.replace(" " + offset + " ",
                                           " " + hex(offset_with_free_space) + " ")
         text_script = text_script.replace(" " + offset + "\n",
@@ -287,6 +301,8 @@ def put_offsets(hex_chunks, text_script, file_name, dyn):
         alen += length + 10
         offsets_found_log += (offset + ' - ' +
                               hex(offset_with_free_space) + '\n')
+        for label in labels:
+            offset = offset_with_
         #print(offset, "-", offset_with_free_space)
     # TODO: Comprovar si ha quedat alguna direcció (en un argument) dinàmica
     return text_script, None, offsets_found_log
@@ -514,8 +530,9 @@ def main():
     parser_d.set_defaults(command='d')
 
     args = parser.parse_args()
-    if not command in args:
+    if not "command" in args:
         print("Error. Run with --help for more info.")
+        quit()
 
     if args.command == "c":
         script = open_script(args.script)
