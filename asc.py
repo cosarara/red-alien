@@ -21,23 +21,6 @@ import binascii
 import text_translate
 import argparse
 #import bytefy
-parser = argparse.ArgumentParser(description='Advanced (Pokémon) Script Compiler',
-                                 formatter_class=argparse.RawTextHelpFormatter)
-subparsers = parser.add_subparsers(help='available commands:')
-parser_c = subparsers.add_parser('c', help='compile')
-parser_c.add_argument('rom', help='path to ROM image')
-parser_c.add_argument('script', help='path to pokemon script')
-parser_c.set_defaults(command='c')
-parser_b = subparsers.add_parser('b', help='debug')
-parser_b.add_argument('rom', help='path to ROM image')
-parser_b.add_argument('script', help='path to pokemon script')
-parser_b.set_defaults(command='b')
-parser_d = subparsers.add_parser('d', help='decompile')
-parser_d.add_argument('rom', help='path to ROM image')
-parser_d.add_argument('offset', help='where to decompile')
-parser_d.set_defaults(command='d')
-
-args = parser.parse_args()
 
 using_windows = False
 using_dynamic = False
@@ -514,6 +497,26 @@ def open_script(file_name):
     return script_text
 
 def main():
+    parser = argparse.ArgumentParser(description='Advanced (Pokémon) Script Compiler')
+
+    subparsers = parser.add_subparsers(help='available commands:')
+    parser_c = subparsers.add_parser('c', help='compile')
+    parser_c.add_argument('rom', help='path to ROM image')
+    parser_c.add_argument('script', help='path to pokemon script')
+    parser_c.set_defaults(command='c')
+    parser_b = subparsers.add_parser('b', help='debug')
+    parser_b.add_argument('rom', help='path to ROM image')
+    parser_b.add_argument('script', help='path to pokemon script')
+    parser_b.set_defaults(command='b')
+    parser_d = subparsers.add_parser('d', help='decompile')
+    parser_d.add_argument('rom', help='path to ROM image')
+    parser_d.add_argument('offset', help='where to decompile')
+    parser_d.set_defaults(command='d')
+
+    args = parser.parse_args()
+    if not command in args:
+        print("Error. Run with --help for more info.")
+
     if args.command == "c":
         script = open_script(args.script)
         #script = open_script("test.pks")

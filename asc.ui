@@ -59,7 +59,7 @@
      <string>Edit</string>
     </property>
     <addaction name="actionCut"/>
-    <addaction name="actionCoyp"/>
+    <addaction name="actionCopy"/>
     <addaction name="actionPaste"/>
     <addaction name="actionDelete"/>
     <addaction name="separator"/>
@@ -121,7 +121,7 @@
     <string>Cut</string>
    </property>
   </action>
-  <action name="actionCoyp">
+  <action name="actionCopy">
    <property name="text">
     <string>Copy</string>
    </property>

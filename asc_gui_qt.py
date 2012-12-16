@@ -4,26 +4,29 @@ import sys
 from PyQt4 import Qt, QtCore, QtGui
 from qtgui import Ui_MainWindow
 import asc
+import argparse
 
-class ASCSyntaxHighlighter(QtGui.QSyntaxHighlighter):
-    def highlightBlock(self, text):
-        # highlight code for ASC syntax
-        myClassFormat = QTextCharFormat()
-        myClassFormat.setFontWeight(QFont.Bold);
-        myClassFormat.setForeground(Qt.darkRed);
-        pass
+#class ASCSyntaxHighlighter(QtGui.QSyntaxHighlighter):
+#    def highlightBlock(self, text):
+#        # highlight code for ASC syntax
+#        myClassFormat = QTextCharFormat()
+#        myClassFormat.setFontWeight(QFont.Bold);
+#        myClassFormat.setForeground(Qt.darkRed);
+#        pass
  
 class Window(QtGui.QMainWindow):
     def __init__(self, parent=None):
         QtGui.QWidget.__init__(self, parent)
         self.ui = Ui_MainWindow()
         self.ui.setupUi(self)
-        #QtCore.QObject.connect(self.ui.asdf, QtCore.SIGNAL("clicked()"), self.ui.textEdit.clear )
-        QtCore.QObject.connect(self.ui.actionOpen, QtCore.SIGNAL("triggered()"),
+        QtCore.QObject.connect(self.ui.actionOpen,
+                               QtCore.SIGNAL("triggered()"),
                                self.load_file)
-        QtCore.QObject.connect(self.ui.actionNew, QtCore.SIGNAL("triggered()"),
+        QtCore.QObject.connect(self.ui.actionNew,
+                               QtCore.SIGNAL("triggered()"),
                                self.new_file)
-        QtCore.QObject.connect(self.ui.actionSave, QtCore.SIGNAL("triggered()"),
+        QtCore.QObject.connect(self.ui.actionSave,
+                               QtCore.SIGNAL("triggered()"),
                                self.save_file)
         QtCore.QObject.connect(self.ui.actionSave_As,
                                QtCore.SIGNAL("triggered()"),
@@ -40,6 +43,27 @@ class Window(QtGui.QMainWindow):
         QtCore.QObject.connect(self.ui.actionDebug,
                                QtCore.SIGNAL("triggered()"),
                                self.action_debug)
+        QtCore.QObject.connect(self.ui.actionCut,
+                               QtCore.SIGNAL("triggered()"),
+                               self.ui.textEdit.cut)
+        QtCore.QObject.connect(self.ui.actionCopy,
+                               QtCore.SIGNAL("triggered()"),
+                               self.ui.textEdit.copy)
+        QtCore.QObject.connect(self.ui.actionPaste,
+                               QtCore.SIGNAL("triggered()"),
+                               self.ui.textEdit.paste)
+        QtCore.QObject.connect(self.ui.actionDelete,
+                               QtCore.SIGNAL("triggered()"),
+                               self.ui.textEdit.removeSelectedText)
+        QtCore.QObject.connect(self.ui.actionUndo,
+                               QtCore.SIGNAL("triggered()"),
+                               self.ui.textEdit.undo)
+        QtCore.QObject.connect(self.ui.actionRedo,
+                               QtCore.SIGNAL("triggered()"),
+                               self.ui.textEdit.redo)
+        QtCore.QObject.connect(self.ui.actionAbout,
+                               QtCore.SIGNAL("triggered()"),
+                               self.help_about)
         self.rom_file_name = ""
         self.file_name = ""
         # QScintilla
@@ -107,26 +131,27 @@ class Window(QtGui.QMainWindow):
     def action_debug(self):
         self.compile("debug")
     
-    def decompile(self):
+    def decompile(self, offset=None):
         if not self.rom_file_name:
             QtGui.QMessageBox.critical(self, "Error", "No ROM loaded")
             return
-        text, ok = QtGui.QInputDialog.getText(self, 'Decompile', 
-                                              'Enter offset (prefix with 0x for hex):')
-        if not ok or not text:
-            return
-        if len(text) > 2 and text[:2] == "0x":
-            try:
-                offset = int(text, 16)
-            except ValueError:
-                QtGui.QMessageBox.critical(self, "Error", "Invalid offset")
+        if not offset:
+            text, ok = QtGui.QInputDialog.getText(self, 'Decompile', 
+                                                  'Enter offset (prefix with 0x for hex):')
+            if not ok or not text:
                 return
-        else:
-            try:
-                offset = int(text)
-            except ValueError:
-                QtGui.QMessageBox.critical(self, "Error", "Invalid offset")
-                return
+            if len(text) > 2 and text[:2] == "0x":
+                try:
+                    offset = int(text, 16)
+                except ValueError:
+                    QtGui.QMessageBox.critical(self, "Error", "Invalid offset")
+                    return
+            else:
+                try:
+                    offset = int(text)
+                except ValueError:
+                    QtGui.QMessageBox.critical(self, "Error", "Invalid offset")
+                    return
         self.ui.textEdit.setText(asc.decompile(self.rom_file_name, offset))
 
     def compile(self, mode): # In "compile" mode, writes changes to ROM
@@ -176,10 +201,28 @@ class Window(QtGui.QMainWindow):
         if log:
             QtGui.QMessageBox.information(self, "log", log)
 
+    def help_about(self):
+        QtGui.QMessageBox.about(self, "About ASC", "Advanced (Pokémon) Script "
+                                      "Compiler\n"
+                                      "Copyright © 2012 Jaume Delclòs Coll\n"
+                                      "(aka cosarara97)")
+
 
  
 if __name__ == "__main__":
-  app = QtGui.QApplication(sys.argv)
-  win = Window()
-  win.show()
-  sys.exit(app.exec_())
+    parser = argparse.ArgumentParser(description='Advanced (Pokémon) Script Compiler')
+    parser.add_argument('file', nargs='?')
+    parser.add_argument('offset', nargs='?')
+    args = parser.parse_args()
+    app = QtGui.QApplication(sys.argv)
+    win = Window()
+    win.show()
+    if args.file and not args.offset: # opening a script
+        win.file_name = args.file
+        with open(args.file, 'r') as f:        
+            text = f.read()
+        win.ui.textEdit.setText(text)
+    elif args.offset:
+        win.rom_file_name = args.file
+        win.decompile(int(args.offset, 16))
+    sys.exit(app.exec_())

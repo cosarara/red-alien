@@ -2,7 +2,7 @@
 
 # Form implementation generated from reading ui file 'asc.ui'
 #
-# Created: Sat Dec 15 18:49:55 2012
+# Created: Sun Dec 16 12:50:55 2012
 #      by: PyQt4 UI code generator 4.9.6
 #
 # WARNING! All changes made in this file will be lost!
@@ -69,8 +69,8 @@ class Ui_MainWindow(object):
         self.actionQuit.setObjectName(_fromUtf8("actionQuit"))
         self.actionCut = QtGui.QAction(MainWindow)
         self.actionCut.setObjectName(_fromUtf8("actionCut"))
-        self.actionCoyp = QtGui.QAction(MainWindow)
-        self.actionCoyp.setObjectName(_fromUtf8("actionCoyp"))
+        self.actionCopy = QtGui.QAction(MainWindow)
+        self.actionCopy.setObjectName(_fromUtf8("actionCopy"))
         self.actionPaste = QtGui.QAction(MainWindow)
         self.actionPaste.setObjectName(_fromUtf8("actionPaste"))
         self.actionDelete = QtGui.QAction(MainWindow)
@@ -97,7 +97,7 @@ class Ui_MainWindow(object):
         self.menuFile.addSeparator()
         self.menuFile.addAction(self.actionQuit)
         self.menuEdit.addAction(self.actionCut)
-        self.menuEdit.addAction(self.actionCoyp)
+        self.menuEdit.addAction(self.actionCopy)
         self.menuEdit.addAction(self.actionPaste)
         self.menuEdit.addAction(self.actionDelete)
         self.menuEdit.addSeparator()
@@ -128,7 +128,7 @@ class Ui_MainWindow(object):
         self.actionSave_As.setText(_translate("MainWindow", "Save As...", None))
         self.actionQuit.setText(_translate("MainWindow", "Quit", None))
         self.actionCut.setText(_translate("MainWindow", "Cut", None))
-        self.actionCoyp.setText(_translate("MainWindow", "Copy", None))
+        self.actionCopy.setText(_translate("MainWindow", "Copy", None))
         self.actionPaste.setText(_translate("MainWindow", "Paste", None))
         self.actionDelete.setText(_translate("MainWindow", "Delete", None))
         self.actionUndo.setText(_translate("MainWindow", "Undo", None))
