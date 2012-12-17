@@ -106,7 +106,8 @@ pkcommands = {
 # Alias:normal_name
 aliases = {"waitmovement": "pauseevent",
            "givepokemon": "addpokemon",
-           "#dynamic": "#dyn"}
+           "#dynamic": "#dyn",
+           "goto": "jump"}
 
 pkcommands_and_aliases = pkcommands
 for alias in aliases:
