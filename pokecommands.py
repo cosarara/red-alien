@@ -69,29 +69,92 @@ pkcommands = {
     "comparebuffers": {"hex": 0x1B, "args": ("buffer, buffer", (2, 2))},
     "comparevartobyte": {"hex": 0x1C, "args": ("var, byte", (2, 1))},
     "comparevartofarbyte": {"hex": 0x1D, "args": ("var, adress", (2, 4))},
-    # TODO: Afegir tots els que falten
-    # ...
+    "comparefarbytetovar": {"hex": 0x1E, "args": ("adress, var", (4, 2))},
+    "comparefarbytetobyte": {"hex": 0x1F, "args": ("adress, byte", (4, 1))},
+    "comparefarbytetofarbyte": {"hex": 0x20, "args": ("adress, address",
+                                                      (4, 4))},
     "compare": {"hex": 0x21, "args": ("var, val", (2, 2))},
     "comparevars": {"hex": 0x22, "args": ("var, val", (2, 2))},
     "callasm": {"hex": 0x23, "args": ("address", (4,))},
     "callasm2": {"hex": 0x24, "args": ("address", (4,))},
     "special": {"hex": 0x25, "args": ("type", (2,))},
     "special2": {"hex": 0x26, "args": ("var, type", (2, 2))},
-    # ...
+    "waitspecial": {"hex": 0x27},
+    "pause": {"hex": 0x28, "args": ("time", (2,))},
+    "setflag": {"hex": 0x29, "args": ("flag", (2,))},
+    "clearflag": {"hex": 0x2A, "args": ("flag", (2,))},
+    "checkflag": {"hex": 0x2B, "args": ("flag", (2,))},
+    # 2 unknown commands TODO: Ask what's in XSE
+    "resetvars": {"hex": 0x2E},
+    "sound": {"hex": 0x2F, "args": ("id", (2,))},
+    "cry": {"hex": 0x30, "args": ("bank, poke", (1, 2))},
+    "fanfare": {"hex": 0x31, "args": ("sound", (2,))},
+    "waitfanfare": {"hex": 0x32},
+    "playsound": {"hex": 0x33, "args": ("sound", (2,))},
+    "playsong": {"hex": 0x34, "args": ("song", (2,))},
+    "fadedefault": {"hex": 0x35},
+    "fadesong": {"hex": 0x36, "args": ("song", (2,))},
+    "fadeout": {"hex": 0x37, "args": ("???", (1,))},
+    "fadein": {"hex": 0x38, "args": ("???", (1,))},
+    "warp": {"hex": 0x39, "args": ("bank, map, warp", (1, 1, 1))}, # TODO: FR
+                            #supports additional x(2), y(2)
+                            # (the same with all types of warps
+    "warpmutted": {"hex": 0x3A, "args": ("bank, map, warp", (1, 1, 1))},
+    "warpwalking": {"hex": 0x3B, "args": ("bank, map, warp", (1, 1, 1))},
+    "falldownhole": {"hex": 0x3C, "args": ("bank, map, warp", (1, 1, 1))},
+    "warpteleport": {"hex": 0x3D, "args": ("bank, map, warp", (1, 1, 1))},
+    "warp3": {"hex": 0x3E, "args": ("bank, map, warp", (1, 1, 1))},
+    "warpelevator": {"hex": 0x3F, "args": ("bank, map, warp", (1, 1, 1))},
+    "warp4": {"hex": 0x40, "args": ("bank, map, warp", (1, 1, 1))},
+    "warp5": {"hex": 0x41, "args": ("bank, map, warp", (1, 1, 1))},
+    "getplayerxy": {"hex": 0x42, "args": ("var, var", (2, 2))},
+    "countpokemon": {"hex": 0x43},
+    "additem": {"hex": 0x44, "args": ("item, num", (2, 2))},
+    "removeitem": {"hex": 0x44, "args": ("item, num", (2, 2))},
+    "checkitemspaceinbag": {"hex": 0x46, "args": ("item?, ???", (2, 2))},
+    "checkitem": {"hex": 0x47, "args": ("item, num", (2, 2))},
+    "checkitemtype": {"hex": 0x48, "args": ("item", (2,))},
+    "giveitemtopc": {"hex": 0x49, "args": ("item, num", (2, 2))},
+    "checkiteminpc": {"hex": 0x4A, "args": ("item, num", (2, 2))},
+    "addfurniture": {"hex": 0x4B, "args": ("type", (2,))},
+    "takefurniture": {"hex": 0x4C, "args": ("type", (2,))},
+    "checkifroomforfurniture": {"hex": 0x4D, "args": ("type", (2,))},
+    "checkfurniture": {"hex": 0x4E, "args": ("type", (2,))},
     "applymovement": {"hex": 0x4F, "args": ("minisprite, offset",
                                             (2, 4)),
                       "offset": (1, "movs")},
-    "pause": {"hex": 0x28, "args": ("time", (2,))},
+    "applymovementfinishat": {"hex": 0x50, "args": ("minisprite, offset"
+                                                    "x, y",
+                                                    (2, 4, 1, 1)),
+                              "offset": (1, "movs")},
     "pauseevent": {"hex": 0x51, "args": ("minisprite", (2,))},
     # ?
     "disappear": {"hex": 0x53, "args": ("minisprite", (2,))},
-    # ...
+    "disappearat": {"hex": 0x54, "args": ("minisprite, x, y", (2, 1, 1))},
     "reappear": {"hex": 0x55, "args": ("minisprite", (2,))},
-    # ...
+    "reappearat": {"hex": 0x56, "args": ("minisprite, x, y", (2, 1, 1))},
+    "movesprite": {"hex": 0x57, "args": ("id, x, y", (2, 2, 2))},
+    "farreappear": {"hex": 0x58, "args": ("minisprite, bank, map", (2, 1, 1))},
+    "fardisappear": {"hex": 0x59, "args": ("minisprite, bank, map", (2, 1, 1))},
     "faceplayer": {"hex": 0x5A},
-    # ...
-    "lockall": {"hex": 0x69},
-    "lock": {"hex": 0x6A},
+    "spriteface": {"hex": 0x5B, "args": ("sprite, face", (2, 1))},
+    "trainerbattle": {"hex": 0x5C, "args": ("kind, num, ?, startmsg, defeatmsg",
+                                            (1, 2, 4, 4))},
+    "lasttrainerbattle": {"hex": 0x5D},
+    "endtrainerbattle": {"hex": 0x5E},
+    "endtrainerbattle2": {"hex": 0x5F}, # TODO: Ask ASM guru difference
+    "checktrainerflag": {"hex": 0x60, "args": ("flag", (2,))},
+    "cleartrainerflag": {"hex": 0x61, "args": ("flag", (2,))},
+    "settrainerflag": {"hex": 0x62, "args": ("flag", (2,))},
+    # TODO: Ask ASM guru difference:
+    "movesprite2": {"hex": 0x63, "args": ("id, x, y", (2, 2, 2))},
+    "moveoffscreen": {"hex": 0x64, "args": ("sprite", (2))}
+    "spritebehave": {"hex": 0x65, "args": ("sprite, type", (2, 1))}
+    "showmsg": {"hex": 0x66},
+    "message": {"hex": 0x67, "args": ("addr", (4,))}},
+    "closemsg": {"hex": 0x68},
+    "lock": {"hex": 0x69},
+    "lockall": {"hex": 0x6A},
     "release": {"hex": 0x6B},
     "releaseall": {"hex": 0x6C},
     # ...
@@ -107,7 +170,8 @@ pkcommands = {
 aliases = {"waitmovement": "pauseevent",
            "givepokemon": "addpokemon",
            "#dynamic": "#dyn",
-           "goto": "jump"}
+           "goto": "jump",
+           "nop": "nop0"}
 
 pkcommands_and_aliases = pkcommands
 for alias in aliases:
