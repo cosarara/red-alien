@@ -52,12 +52,12 @@ def advanced_preparsing(text_script):
     return text_script
 
 # The basic language pre-parser
-def read_text_script(text_script, end_commands=["end", "return"]):
+def read_text_script(text_script, end_commands=["end", "softend"]):
     text_script = apply_defs(text_script)
     text_script = advanced_preparsing(text_script)
     list_script = text_script.split("\n")
     #org = 0
-    org_i = 0
+    org_i = -1
     has_org = False
     dyn = (False, 0)
     parsed_list = []
@@ -98,6 +98,7 @@ def read_text_script(text_script, end_commands=["end", "return"]):
 
         else:
             if command == "#org":
+                org_i += 1
                 offset = args
                 parsed_list.append(offset)
                 has_org = True
@@ -122,13 +123,13 @@ def read_text_script(text_script, end_commands=["end", "return"]):
             elif command in end_commands or words == ["#raw", "0xFE"]:
                 #print "END"
                 parsed_list[org_i].append(words)
-                org_i += 1
+                #org_i += 1
                 has_org = False
 
             elif command == "=":
                 has_org = False
                 parsed_list[org_i].append(line)
-                org_i += 1
+                #org_i += 1
 
 #            elif command == "#raw":
 #                parsed_list.append(args)
@@ -354,13 +355,14 @@ def decompile(file_name, offset, type_="script", info=False):
     # Preparem ROM text
     print("'file name = " + file_name)
     print("'offset = " + hex(offset))
+    print("---\n")
     with open(file_name, "rb") as f:
         rombytes = f.read()
     offsets = [(offset, type_)]
     textscript = ''
     decompiled_offsets = []
     while offsets:
-        print(offsets[0])
+        #print(offsets[0])
         offset = offsets[0][0] & 0xffffff
         #if len(hex(offset)[2:]) == 8 and offset[:2] == "08":
         #    offset = offset[2:]
@@ -382,7 +384,7 @@ def decompile(file_name, offset, type_="script", info=False):
             textscript += ("#org " + hex(offset) +
                            "\n= " + text + "\n\n")
         if type_ == "movs":
-            print("movs")
+            #print("movs")
             textscript_, offsets_ = decompile_movs(rombytes, offset)
             textscript += ("#org " + hex(offset) + "\n" +
                            textscript_ + "\n")
@@ -390,18 +392,18 @@ def decompile(file_name, offset, type_="script", info=False):
         decompiled_offsets.append(offset)
         # Removing duplicates doesn't hurt, right?
         decompiled_offsets = list(set(decompiled_offsets))
-    print('----')
+    #print('----')
     #print(textscript)
     return textscript
 
 
 def decompile_script(rombytes, offset, added_offsets,
                      end_hex_commands=[0xFF], info=False):
-    print("decompiling...")
+    #print("decompiling...")
     offset &= 0xffffff
     # Preparem ROM text
     offsets = []
-    print(offset)
+    #print(offset)
     #hexscript = romtext[int(offset, 16) * 2:]
     hexscript = rombytes
     i = offset
@@ -423,10 +425,10 @@ def decompile_script(rombytes, offset, added_offsets,
             break
         #if not hex_command:
         #    break
-        print("hex command = " + hex(hex_command))
+    #    print("hex command = " + hex(hex_command))
         if hex_command in pk.dec_pkcommands:
             text_command = pk.dec_pkcommands[hex_command]
-            print(text_command)
+    #        print(text_command)
             textscript += text_command
             i += 1
             command_data = pk.pkcommands[text_command]
@@ -458,15 +460,15 @@ def decompile_script(rombytes, offset, added_offsets,
             textscript += "#raw " + hex(hex_command)
             i += 1
         textscript += "\n"
-        print("text_command = " + text_command + ", hex_command = "
-               + hex(hex_command))
+    #    print("text_command = " + text_command + ", hex_command = "
+    #           + hex(hex_command))
     #print("textscript =", textscript)
     return textscript, offsets
 
 
 def decompile_movs(romtext, offset, end_commands=["end", "jump", "return"],
                    end_hex_commands=[0xFE, 0xFF]):
-    print("decompiling...")
+    #print("decompiling...")
     # Preparem ROM text
     print(offset)
     #hexscript = romtext[int(offset, 16) * 2:]
@@ -500,12 +502,12 @@ def decompile_text(romtext, offset):
     start = offset
     end = start + romtext[start:].find(b"\xff")
     text = romtext[start:end]
-    print(text, start, end, hex(start), hex(end))
+    #print(text, start, end, hex(start), hex(end))
     text_table = text_translate.table
     # decoding table
     d_table = text_translate.read_table_decode(text_table)
     translated_text = text_translate.hex_to_ascii(text, d_table)
-    print(translated_text)
+    #print(translated_text)
     return translated_text
 
 
