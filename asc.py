@@ -52,7 +52,7 @@ def advanced_preparsing(text_script):
     return text_script
 
 # The basic language pre-parser
-def read_text_script(text_script, end_commands=["end", "jump", "return"]):
+def read_text_script(text_script, end_commands=["end", "return"]):
     text_script = apply_defs(text_script)
     text_script = advanced_preparsing(text_script)
     list_script = text_script.split("\n")
@@ -70,8 +70,8 @@ def read_text_script(text_script, end_commands=["end", "jump", "return"]):
         if line == "":
             continue
         if line[0] == ":": # Labels for goto's
-            label_list.append(line, parsed_list[0]) 
-            parsed_list.append(line)
+            #label_list.append(line, parsed_list[0]) 
+            parsed_list[org_i].append([line])
             continue
 
         words = line.split(" ")
@@ -114,6 +114,7 @@ def read_text_script(text_script, end_commands=["end", "jump", "return"]):
                     return None, error, dyn
 
             elif has_org is False:
+                print(command)
                 error = ("ERROR: No #org found - " + str(num))
                 #print line
                 return None, error, dyn
@@ -161,6 +162,8 @@ def read_text_script(text_script, end_commands=["end", "jump", "return"]):
                 parsed_list[org_i].append(words)
         if command != "=" and command != "if":
             for i, arg in enumerate(args):
+                if arg[0] in (":", "@"):
+                    continue
                 arg_len = pk.pkcommands[command]["args"][1][i]
                 #print "arg_len = " + str(arg_len)
                 #print arg
@@ -168,7 +171,7 @@ def read_text_script(text_script, end_commands=["end", "jump", "return"]):
                     this_arg_len = len(arg[2:]) // 2
                 else:
                     this_arg_len = len(arg) // 2
-                if this_arg_len > arg_len and arg[0] != "@":
+                if this_arg_len > arg_len:
                     print("We wan't this:", arg_len)
                     print("But we have this:", this_arg_len)
                     print("and the arg is this: ", arg)
@@ -257,6 +260,20 @@ def compile_script(script_list):
 
 dynamic_start_offset = "800000"
 
+def put_offsets_labels(hex_chunks, text_script):
+    for i, chunk in enumerate(hex_chunks):
+        for label in chunk[2]:
+            #print(label)
+            name = label[0]
+            pos = hex(int(chunk[0], 16) + label[1])
+            text_script = text_script.replace(" " + name + " ",
+                                              " " + pos + " ")
+            text_script = text_script.replace(" " + name + "\n",
+                                              " " + pos + "\n")
+            text_script = text_script.replace("\n" + name + "\n", "\n")
+            text_script = text_script.replace("\n" + name + " ", "\n")
+    return text_script
+
 
 def put_offsets(hex_chunks, text_script, file_name, dyn):
 #    print dynamic_start_offset
@@ -268,14 +285,6 @@ def put_offsets(hex_chunks, text_script, file_name, dyn):
     rom_file_r.close()
     #rom_text = binascii.hexlify(rom_text).upper()
     offsets_found_log = ''
-    for i, chunk in enumerate(hex_chunks):
-        for label in chunk[2]:
-            name = label[0]
-            pos = chunk[0] + label[1]
-            text_script = text_script.replace(" " + name + " ",
-                                              " " + pos + " ")
-            text_script = text_script.replace(" " + name + "\n",
-                                              " " + pos + "\n")
     for i, chunk in enumerate(hex_chunks):
         offset = chunk[0]
         part = chunk[1] # The hex chunk we have to put somewhere
@@ -341,7 +350,7 @@ def write_hex_script(hex_scripts, rom_file_name):
         #rom_file_w.close()
 
 
-def decompile(file_name, offset, type_="script"):
+def decompile(file_name, offset, type_="script", info=False):
     # Preparem ROM text
     print("'file name = " + file_name)
     print("'offset = " + hex(offset))
@@ -364,10 +373,10 @@ def decompile(file_name, offset, type_="script"):
             for offset_ in offsets_:
                 if (offset_[0] & 0xffffff not in decompiled_offsets
                     and offset_ not in offsets):
+                    offsets += [offset_]
 #                    print ("going to add " + str(offset_[0])
 #                           + " because it's not in "
 #                           + str(decompiled_offsets))
-                    offsets += [offset_]
         if type_ == "text":
             text = decompile_text(rombytes, offset)
             textscript += ("#org " + hex(offset) +
@@ -387,7 +396,7 @@ def decompile(file_name, offset, type_="script"):
 
 
 def decompile_script(rombytes, offset, added_offsets,
-                     end_hex_commands=[0xFF]):
+                     end_hex_commands=[0xFF], info=False):
     print("decompiling...")
     offset &= 0xffffff
     # Preparem ROM text
@@ -548,11 +557,13 @@ def main():
             print(error)
             quit()
         #if using_dynamic:
+        log = ''
         if dyn[0]:
             print("going dynamic!")
             script, error, log = put_offsets(hex_script, script,
                                              args.rom, dyn[1])
             #print script
+            script = put_offsets_labels(hex_script, script)
             print("re-preparsing")
             preparsed_script, error, dyn = read_text_script(script)
             if error:
@@ -564,6 +575,13 @@ def main():
                 print(error)
                 quit()
             print("yay!")
+        else:
+            #print(script)
+            script = put_offsets_labels(hex_script, script)
+            #print('---')
+            #print(script)
+            preparsed_script, error, dyn = read_text_script(script)
+            hex_script, error = compile_script(preparsed_script)
         write_hex_script(hex_script, args.rom)
         print(log)
 
@@ -572,24 +590,25 @@ def main():
         #script = open_script("test.pks")
         #print script
         preparsed_script, error, dyn = read_text_script(script)
-#        print preparsed_script
+        #print(preparsed_script)
         #print read_text_script("#org 0x80000\nmsgbox @lol\ncallstd 0x2")
         if error:
             print(error)
             quit()
         hex_script, error = compile_script(preparsed_script)
-        print(hex_script)
+        #print(hex_script)
         if error:
             print(error)
             quit()
 #        if using_dynamic:
+        log = ''
         if dyn[0]:
             print("going dynamic!")
             #print hex_script
             script, error, log = put_offsets(hex_script, script,
                                              args.rom, dyn[1])
-            #print script
             print("re-preparsing")
+            script = put_offsets_labels(hex_script, script)
             preparsed_script, error, dyn = read_text_script(script)
             if error:
                 print(error)
@@ -600,6 +619,11 @@ def main():
                 print(error)
                 quit()
             print("yay!")
+        else:
+            script = put_offsets_labels(hex_script, script)
+            #print(script)
+            preparsed_script, error, dyn = read_text_script(script)
+            hex_script, error = compile_script(preparsed_script)
         print(hex_script)
         print(log)
 
