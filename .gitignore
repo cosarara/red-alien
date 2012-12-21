@@ -3,3 +3,4 @@
 *.bak
 *.gba
 *.pks
+__pycache__*

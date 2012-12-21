@@ -1,0 +1,97 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+
+ lol
+
+-->
+
+<language id="pks" _name="PKS" version="2.0" _section="Scripts">
+  <metadata>
+    <property name="globs">*.pks</property>
+  </metadata>
+  
+  <styles>
+    <style id="comment"       _name="Comment"           map-to="def:comment"/>
+    <style id="string"        _name="String"            map-to="def:string"/>
+    <style id="dynamic"       _name="Dynamic"           map-to="def:shebang"/>
+    <style id="name"          _name="Name"              map-to="def:function"/>
+    <style id="statement"     _name="Statement"         map-to="def:statement"/>
+    <style id="keyword"       _name="Keyword"           map-to="def:keyword"/>
+    <style id="commands"      _name="Command"           map-to="def:type"/>
+    <style id="constants"     _name="Common Defines"    map-to="def:special-constant"/>
+    <style id="signal-name"   _name="Signal name"       map-to="def:constant"/>
+  </styles>
+  
+  <definitions>
+    <context id="pks">
+      <include>
+        <context id="string" style-ref="string">
+          <start>=</start>
+          <end>$</end>
+        </context>
+        <context id="movdata" style-ref="string">
+          <start>M </start>
+          <end>end</end>
+        </context>
+        <context id="comment" style-ref="comment">
+          <start>'</start>
+          <end>$</end>
+        </context>
+        <context id="dynamic" style-ref="dynamic">
+          <match extended="true">
+                            (\#dyn|\#dynamic)\s
+          </match>
+        </context>
+        <context id="name" style-ref="name">
+          <match extended="true">
+                            @.*(\ |$)
+          </match>
+        </context>
+        <context id="statement" style-ref="statement" class="statement">
+          <!--<keyword>#org</keyword>-->
+          <start>#</start>
+          <end> </end>
+        </context>
+        <context id="command" style-ref="commands" class="command">
+          <keyword>addpokemon</keyword>
+          <keyword>applymovement</keyword>
+          <keyword>call</keyword>
+          <keyword>callstd</keyword>
+          <keyword>checkflag</keyword>
+          <keyword>clearflag</keyword>
+          <keyword>compare</keyword>
+          <keyword>copyvars</keyword>
+          <keyword>disappear</keyword>
+          <keyword>end</keyword>
+          <keyword>fadescreen</keyword>
+          <keyword>fadesong</keyword>
+          <keyword>if</keyword>
+          <keyword>jump</keyword>
+          <keyword>lockall</keyword>   
+          <keyword>lock</keyword>
+          <keyword>msgbox</keyword>
+          <keyword>multichoice</keyword>
+          <keyword>pauseevent</keyword>
+          <keyword>pause</keyword>
+          <keyword>playsound</keyword>
+          <keyword>reappear</keyword>
+          <keyword>releaseall</keyword>
+          <keyword>release</keyword>
+          <keyword>setflag</keyword>
+          <keyword>special</keyword>
+          <keyword>trainerbattle</keyword>
+        </context>
+        
+        <context id="constant" style-ref="constants">
+          <keyword>MSG_SIGN</keyword>
+          <keyword>MSG_NORMAL</keyword>
+          <keyword>MSG_LOCK</keyword>
+          <keyword>MSG_NOCLOSE</keyword>
+          <keyword>PLAYER</keyword>
+          <keyword>true</keyword>
+          <keyword>false</keyword>
+        </context>
+      </include>
+    </context>
+  </definitions>
+</language>
