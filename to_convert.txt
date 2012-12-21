@@ -1,0 +1,84 @@
+
+#define CMD_SETPOKEMONPP            0x7B //C,D,T pkmslot(1) atkslot(1) pp(2)
+#define CMD_CHECKATTACK             0x7C //C,D,T attk(2)
+#define CMD_STOREPOKEMON            0x7D //C,D,T TXT_VAR(1) POKE(2)
+#define CMD_STOREFIRSTPOKEMON       0x7E //C,D,T TXT_VAR(1)
+#define CMD_STOREPARTYPOKEMON       0x7F //C,D,T TXT_VAR(1) POS(2)
+#define CMD_STOREITEM               0x80 //C,D,T TXT_VAR(1) ITM(2)
+#define CMD_STOREFURNITURE          0x81 //C,D,T TXT_VAR(1) ITM(2)
+#define CMD_STOREATTACK             0x82 //C,D,T TXT_VAR(1) ATK(2)
+#define CMD_STOREVAR                0x83 //C,D,T TXT_VAR(1) VAR(2)
+#define CMD_STORECOMP               0x84 //C,D,T TXT_VAR(1) COMP(2)
+#define CMD_STORETEXT               0x85 //C,D,T TXT_VAR(1) TXT(4)
+#define CMD_POKEMART                0x86 //C,D,T mart(4)
+#define CMD_POKEMART2               0x87 //C,D,T ptr(4)
+#define CMD_FAKEJUMPSTD             0x88 //C,D,T FR type(1)Does not affect actual gameplay
+#define CMD_POKEMART3               0x88 //C,D,T RS ptr(4)
+#define CMD_FAKECALLSTD             0x89 //C,D,T FR type(1)Ditto
+#define CMD_SLOTMACHINE             0x89 //C,D,T RS ??(2)
+#define CMD_8A                      0x8A //?,?,T (1)(1)(1)
+#define CMD_CHOOSECONTESTPOKEMON    0x8B //C,D,T
+#define CMD_STARTCONTEST            0x8C //C,D,T
+#define CMD_STARTWIRELESS           0x8E //C,D,T EM ONLY
+#define CMD_RANDOM                  0x8F //C,D,T possibilities(2)
+#define CMD_GIVEMONEY               0x90 //C,D,T amt(4)?(1)
+#define CMD_PAYMONEY                0x91 //C,D,T amt(4)?(1)
+#define CMD_CHECKMONEY              0x92 //C,D,T amt(4)?(1)
+#define CMD_SHOWMONEY               0x93 //C,D,T x(1)y(1)?(1)
+#define CMD_HIDEMONEY               0x94 //C,D,T x(1)y(1)
+#define CMD_UPDATEMONEY             0x95 //C,D,  (1)(1)(1)
+#define CMD_96                      0x96 //?,?,  (2)
+#define CMD_FADESCREEN              0x97 //C,D,  blk(1)
+#define CMD_FADESCREENDELAY         0x98 //C,D,  blk(1)delay(1)
+#define CMD_DARKENROOM              0x99 //C,D,  size(2)
+#define CMD_LIGHTROOM               0x9A //C,D,  size(1)
+#define CMD_MSGBOX2                 0x9B //C,D,  ptr(4)
+#define CMD_DOANIMATION             0x9C //C,D,  (2)
+#define CMD_SETANIMATION            0x9D //C,D,  (1)(2)
+#define CMD_CHECKANIMATION          0x9E //C,D,  (2)
+#define CMD_SETHEALINGPLACE         0x9F //C,D,  place(2)
+#define CMD_CHECKGENDER             0xA0 //C,D, 
+#define CMD_CRYFR                   0xA1 //C,D,  (2)(1)
+#define CMD_SETMAPTILE              0xA2 //C,D,  X(2) Y(2) tile(2) attr(2)
+#define CMD_RESETWEATHER            0xA3 //C,D, 
+#define CMD_SETWEATHER              0xA4 //C,D,  weather(1) (fr=2)
+#define CMD_DOWEATHER               0xA5 //C,D, 
+#define CMD_A6                      0xA6 //?,?,  (1)
+#define CMD_SETMAPFOOTER            0xA7 //C,D,  (2)
+#define CMD_INCREASESPRITELEVEL     0xA8 //C,D,  id(2)bank(1)map(1)?(1)
+#define CMD_RESETSPRITELEVEL        0xA9 //C,D,  id(2)bank(1)map(1)
+#define CMD_CREATETEMPSPRITE        0xAA //C,D,  spr(1)id(1)x(2)y(2)behave(1)dir(1)
+#define CMD_TEMPSPRITEFACE          0xAB //C,D,  id(1)dir(1)
+#define CMD_SETDOOROPENED           0xAC //C,D,  (2)(2)
+#define CMD_SETDOORCLOSED           0xAD //C,D,  (2)(2)
+#define CMD_DOORCHANGE              0xAE //C,D, 
+#define CMD_SETDOOROPENEDSTATIC     0xAF //C,D,  (2)(2)
+#define CMD_SETDOORCLOSEDSTATIC     0xB0 //C,D,  (2)(2)
+#define CMD_B1                      0xB1 //?,?,  (1)(1)(2)(2)
+#define CMD_B2                      0xB2 //?,?, 
+#define CMD_COINCASETOVAR           0xB3 //C,D,  var(2)
+#define CMD_GIVETOCOINCASE          0xB4 //C,D,  coins(2)
+#define CMD_TAKEFROMCOINCASE        0xB5 //C,D,  coins(2)
+#define CMD_BATTLE                  0xB6 //C,D,  poke(2) lvl(1) item(2)
+#define CMD_LASTBATTLE              0xB7 //C,D, 
+#define CMD_SHOWCOINS               0xC0 //?,?,  x(1)y(1)
+#define CMD_HIDECOINS               0xC1 //?,?,  x(1)y(1)
+#define CMD_UPDATECOINS             0xC2 //?,?,  x(1)y(1)
+#define CMD_C3                      0xC3 //?,?,  ??????(1)
+#define CMD_WARP6                   0xC4 //C,D,  bnk(1)map(1)ext(1)x(2)y(2)
+#define CMD_WAITCRY                 0xC5 //C,D, 
+#define CMD_STOREBOXNAME            0xC6 //C,D,  \v\hxx(1) boxno(2)
+#define CMD_TEXTCOLOR               0xC7 //?,?,  colour(1)
+#define CMD_MSGBOXSIGN              0xCA //C,D, 
+#define CMD_MSGBOXNORMAL            0xCB //C,D, 
+#define CMD_COMPAREHIDDENVAR        0xCC //C,D,  var(1) val(2)
+#define CMD_SETOBEDIENCE            0xCD //C,D,  id(2)
+#define CMD_CHECKOBEDIENCE          0xCE //C,D,  id(2)
+#define CMD_EXECUTERAM              0xCF //C,D, 
+#define CMD_SETWORLDMAPFLAG         0xD0 //C,D,  FLAG(2)
+#define CMD_WARPTELEPORT2           0xD1 //C,D,  bnk(1) map(1) ext(1) x(2) y(2)
+#define CMD_SETCATCHLOCATION        0xD2 //C,D,  id(2) loc(1)
+#define CMD_D3                      0xD3 //?,?,  Braille(4)
+#define CMD_STOREITEMS              0xD4 //C,D,  \v\hxx(1) id(2) amt(2)
+#define CMD_FB                      0xFB //?,?,  ADDR4?
+#define CMD_FE                      0xFE //?,?,  (1)

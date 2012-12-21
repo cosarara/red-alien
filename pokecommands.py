@@ -15,6 +15,12 @@
 
 #    You should have received a copy of the GNU General Public License
 #    along with ASC.  If not, see <http://www.gnu.org/licenses/>.
+# Documentation for writing this table was taken from Score_Under's
+# pokedef.h
+
+# perl -pe 's/#define CMD_(.*?)( *?)0x(..) \/\/(.*)/\t\"\L$1\": \{\"hex\": 0x\3,
+# \"args\": (\"\4\")},/' to_convert.txt > args_to_add.txt
+
 
 
 # Format:
@@ -148,22 +154,128 @@ pkcommands = {
     "settrainerflag": {"hex": 0x62, "args": ("flag", (2,))},
     # TODO: Ask ASM guru difference:
     "movesprite2": {"hex": 0x63, "args": ("id, x, y", (2, 2, 2))},
-    "moveoffscreen": {"hex": 0x64, "args": ("sprite", (2))}
-    "spritebehave": {"hex": 0x65, "args": ("sprite, type", (2, 1))}
+    "moveoffscreen": {"hex": 0x64, "args": ("sprite", (2))},
+    "spritebehave": {"hex": 0x65, "args": ("sprite, type", (2, 1))},
     "showmsg": {"hex": 0x66},
-    "message": {"hex": 0x67, "args": ("addr", (4,))}},
+    "message": {"hex": 0x67, "args": ("addr", (4,))},
     "closemsg": {"hex": 0x68},
     "lock": {"hex": 0x69},
     "lockall": {"hex": 0x6A},
     "release": {"hex": 0x6B},
     "releaseall": {"hex": 0x6C},
-    # ...
+    "waitbutton": {"hex": 0x6D},
+	"showyesno": {"hex": 0x6E, "args": ("x, y", (1, 1))},
+	"multichoice": {"hex": 0x6F, "args": ("x, y, list, able to cancel",
+                                          (1, 1, 1, 1))},
+	"multichoice2": {"hex": 0x70, "args": ("x, y, list, defchoice",
+                                          (1, 1, 1, 1))},
+	"multichoice3": {"hex": 0x71, "args": ("x, y, list, per row, "
+                                           "able to cancel",
+                                          (1, 1, 1, 1))},
+	"showbox": {"hex": 0x72, "args": ("x, y, w, h",
+                                          (1, 1, 1, 1))},
+	"hidebox": {"hex": 0x73, "args": ("x, y, w, h",
+                                          (1, 1, 1, 1))},
+	"clearbox": {"hex": 0x74, "args": ("x, y, w, h",
+                                          (1, 1, 1, 1))},
+    "showpokepic": {"hex": 0x75, "args": ("var, x, y", (2, 1, 1))},
+    "hidepokepic": {"hex": 0x76},
+	"picture": {"hex": 0x77, "args": ("num", (1,))},
+	"braille": {"hex": 0x78, "args": ("addr", (4,))},
     "addpokemon": {"hex": 0x79, "args": ("poke, lvl, item, ??, ??, ??",
                                          (2, 1, 2, 1, 4, 4))},
-    # ...
-    "storevar": {"hex": 0x83, "args": ("text_var, var", (1, 2))},
-    # ...
-    "random": {"hex": 0x8F, "args": ("max?", (2,))}
+    "giveegg": {"hex": 0x7a, "args": ("poke", (2,))},
+	"setpokemonpp": {"hex": 0x7b, "args": ("pkmslot, atkslot, pp",
+                                           (1, 1, 2))},
+	"checkattack": {"hex": 0x7c, "args": ("attk", (2,))},
+	"storepokemon": {"hex": 0x7d, "args": ("txt_var, poke", (1, 2))},
+	"storefirstpokemon": {"hex": 0x7e, "args": ("txt_var", (1,))},
+	"storepartypokemon": {"hex": 0x7f, "args": ("txt_var, pos", (1, 2))},
+	"storeitem": {"hex": 0x80, "args": ("txt_var, itm", (1, 2))},
+	"storefurniture": {"hex": 0x81, "args": ("txt_var, itm", (1, 2))},
+	"storeattack": {"hex": 0x82, "args": ("txt_var, atk", (1, 2))},
+	"storevar": {"hex": 0x83, "args": ("txt_var, var", (1, 2))},
+	"storecomp": {"hex": 0x84, "args": ("txt_var, comp", (1, 2))},
+	"storetext": {"hex": 0x85, "args": ("txt_var, txt", (1, 4))},
+	"pokemart": {"hex": 0x86, "args": ("mart", (4,))},
+	"pokemart2": {"hex": 0x87, "args": ("ptr", (4,))},
+	"fakejumpstd": {"hex": 0x88, "args": ("type", (1,))}, # FR
+	"pokemart3": {"hex": 0x88, "args": ("ptr", (4,))}, # RB
+	"fakecallstd": {"hex": 0x89, "args": ("type", (1,))}, # FR
+	"slotmachine": {"hex": 0x89, "args": ("??", (2,))}, # RB
+	#"8a": {"hex": 0x8a, "args": ("?,?,t", (1, 1, 1))},
+	"choosecontestpokemon": {"hex": 0x8b},
+	"startcontest": {"hex": 0x8c},
+	"startwireless": {"hex": 0x8e}, # emerald only
+    "random": {"hex": 0x8F, "args": ("max?", (2,))},
+	"givemoney": {"hex": 0x90, "args": ("amt, ???", (4, 1))},
+	"paymoney": {"hex": 0x91, "args": ("amt, ???", (4, 1))},
+	"checkmoney": {"hex": 0x92, "args": ("amt, ???", (4, 1))},
+	"showmoney": {"hex": 0x93, "args": ("x, y, ???", (1,1,1))},
+	"hidemoney": {"hex": 0x94, "args": ("x, y", (1, 1))},
+	"updatemoney": {"hex": 0x95, "args": ("?, ?, ?", (1, 1, 1))},
+    # 0x96
+	"fadescreen": {"hex": 0x97, "args": ("blank", (1,))},
+	"fadescreendelay": {"hex": 0x98, "args": ("blank, delay", (1, 1))},
+	"darkenroom": {"hex": 0x99, "args": ("size", (2,))},
+	"lightroom": {"hex": 0x9a, "args": ("size", (1,))},
+	"msgbox2": {"hex": 0x9b, "args": ("ptr", (4,))},
+	"doanimation": {"hex": 0x9c, "args": ("?", (2,))},
+	"setanimation": {"hex": 0x9d, "args": ("?, ?", (1, 2))},
+	"checkanimation": {"hex": 0x9e, "args": ("?", (2,))},
+	"sethealingplace": {"hex": 0x9f, "args": ("place", (2,))},
+	"checkgender": {"hex": 0xa0},
+	"cryfr": {"hex": 0xa1, "args": ("?, )", (2, 1))},
+	"setmaptile": {"hex": 0xa2, "args": ("x, y, tile, attr", (2, 2, 2, 2))},
+	"resetweather": {"hex": 0xa3},
+	"setweather": {"hex": 0xa4, "args": ("weather", (1,))},
+	"doweather": {"hex": 0xa5},
+	"a6": {"hex": 0xa6, "args": ("?", (1,))},
+	"setmapfooter": {"hex": 0xa7, "args": ("?", (2,))},
+	"increasespritelevel": {"hex": 0xa8, "args": ("id, bank, map, ?",
+                                                  (2, 1, 1, 1))},
+	"resetspritelevel": {"hex": 0xa9, "args": ("id, bank, map", (2, 1, 1))},
+	"createtempsprite": {"hex": 0xaa, "args":
+                      ("spr, id, x, y, behave, dir",
+                       (1, 1, 2, 2, 1, 1))},
+	"tempspriteface": {"hex": 0xab, "args": ("id, dir", (1, 1))},
+	"setdooropened": {"hex": 0xac, "args": ("?, ?", (2, 2))},
+	"setdoorclosed": {"hex": 0xad, "args": ("?, ?", (2, 2))},
+	"doorchange": {"hex": 0xae},
+	"setdooropenedstatic": {"hex": 0xaf, "args": ("?, ?", (2, 2))},
+	"setdoorclosedstatic": {"hex": 0xb0, "args": ("?, ?", (2, 2))},
+	#"b1": {"hex": 0xb1, "args": ("?, ?", (1, 1, 2, 2))},
+	#"b2": {"hex": 0xb2, "args": ("?,?, ")},
+	"coincasetovar": {"hex": 0xb3, "args": ("var", (2,))},
+	"givetocoincase": {"hex": 0xb4, "args": ("coins", (2,))},
+	"takefromcoincase": {"hex": 0xb5, "args": ("coins", (2,))},
+	"battle": {"hex": 0xb6, "args": ("poke, lvl, item", (2, 1, 2))},
+	"lastbattle": {"hex": 0xb7},
+	"showcoins": {"hex": 0xc0, "args": ("x, y", (1, 1))},
+	"hidecoins": {"hex": 0xc1, "args": ("x, y", (1, 1))},
+	"updatecoins": {"hex": 0xc2, "args": ("x, y", (1, 1))},
+	"c3": {"hex": 0xc3, "args": ("??", (1,))},
+	"warp6": {"hex": 0xc4, "args": ("bnk, map, ext, x, y",
+                                    (1, 1, 1, 2, 2))},
+	"waitcry": {"hex": 0xc5},
+	#"storeboxname": {"hex": 0xc6, "args": ("\v\hxx(1) boxno(2)")},
+	"storeboxname": {"hex": 0xc6, "args": ("buf, boxno", (1, 2))},
+	"textcolor": {"hex": 0xc7, "args": ("colour", (1,))},
+	"msgboxsign": {"hex": 0xca},
+	"msgboxnormal": {"hex": 0xcb},
+	"comparehiddenvar": {"hex": 0xcc, "args": ("var, val", (1, 2))},
+	"setobedience": {"hex": 0xcd, "args": ("id", (2,))},
+	"checkobedience": {"hex": 0xce, "args": ("id", (2,))},
+	"executeram": {"hex": 0xcf},
+	"setworldmapflag": {"hex": 0xd0, "args": ("flag(2)")},
+	"warpteleport2": {"hex": 0xd1, "args": ("bnk, map, ext, x, y",
+                                    (1, 1, 1, 2, 2))},
+	"setcatchlocation": {"hex": 0xd2, "args": ("id, loc", (2, 1))},
+	#"d3": {"hex": 0xd3, "args": ("braille", (4,))},
+	"storeitems": {"hex": 0xd4, "args": ("?, id, amt", (1, 2, 2))},
+	#"fb": {"hex": 0xfb, "args": ("addr", (4))},
+	#"fe": {"hex": 0xfe, "args": ("?", (1,))},
+
     }
 
 # Alias:normal_name
