@@ -1,4 +1,5 @@
-'aaa
+' Test script - copyright cosarara97
+' Licenced under the WTFPL
 #define MAL1 4
 #define MAL2 5
 #define MON 6

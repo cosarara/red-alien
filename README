@@ -1,8 +1,8 @@
-Copyright Jaume Delclòs Coll 2012
+Copyright Jaume Delclòs Coll 2012 (aka cosarara97)
 
-alpha 1
+Advanced (Pokemon) Script Compiler
+Depends on:
+python3
+pyqt
+python-qscintilla
 
-Hacking:
-If after installing libgtksourceview-3.0-dev glade can't find
-gtksourceview, run this:
-$ sudo ln -s /usr/lib/x86_64-linux-gnu/libgtksourceview-3.0.so /usr/lib/glade/modules/libgtksourceview-3.0.so
