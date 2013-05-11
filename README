@@ -8,6 +8,11 @@ python-qscintilla
 
 You can run asc.py for CLI or asc_gui_qt.py for GUI.
 
+If you want pks syntax highlighting in vim, you can copy utils/pks.vim to
+~/.vim/syntax/, and add the following line to your .vimrc:
+autocmd BufRead,BufNewFile *.pks set filetype=pks
+
+
 
 Most of the command's information was taken from PKSV's pokedef.h
 
