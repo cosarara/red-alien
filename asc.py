@@ -22,10 +22,32 @@ import binascii
 import text_translate
 import argparse
 #import bytefy
+import re
 
 using_windows = False
 using_dynamic = False
 end_commands = ["end", "jump", "return"]
+
+
+operators = {"==": "1", "!=": "5", "<": "0", ">": "2",
+             "<=": "3", ">=": "4"}
+contrary_operators = {"==": "!=", "!=": "==", "<": ">=", ">": "<=",
+                      "<=": ">", ">=": "<"}
+
+def preparse(text_script):
+    text_script = remove_comments(text_script)
+    text_script = re.sub("^[ \t]*", "", text_script, flags=re.MULTILINE)
+    text_script = apply_defs(text_script)
+    text_script = advanced_preparsing(text_script)
+    print(text_script)
+    return text_script
+
+def remove_comments(text_script):
+    comment_symbols = ['//', "'"]
+    for symbol in comment_symbols:
+        pattern = symbol + "(.*?)$"
+        text_script = re.sub(pattern, "", text_script, flags=re.MULTILINE)
+    return text_script
 
 
 def apply_defs(text_script):
@@ -49,13 +71,120 @@ def apply_defs(text_script):
     return text_script
 
 # Here we'll make the compiler really advanced :)
-def advanced_preparsing(text_script):
+def advanced_preparsing(text_script, level=0):
+    # Okay, so this is what we want:
+    # 1. ----------- while -----------
+    # while (<expression>) {
+    #   <command>
+    #   . . .
+    # }
+    #
+    # 2. ----------- if/else -----------
+    # if (<expression>) {
+    #   <command>
+    #   . . .
+    # } [else {
+    #   <command>
+    #   . . .
+    # }]
+    #
+    # 3. ----------- expressions -----------
+    # (<var num> <operator> <literal num>)
+    # or
+    # (<flag num>)
+    # TODO: better names for these functions
+    def grep_part(text, start_pos, open, close):
+        start_pos = start_pos + text[start_pos:].find(open) + 1
+        s = -1
+        for i, char in enumerate(text[start_pos:]):
+            if char == close:
+                s += 1
+            elif char == open:
+                s -= 1
+            if s == 0:
+                break
+        else:
+            raise Exception("No matching " + close + " found")
+        end_pos = start_pos + i
+        return start_pos, end_pos
+        #return text[text[start_pos:].find(open) + start_pos + 1:
+        #            text[start_pos:].find(close) + start_pos]
+
+    def grep_statement(text, name):
+        pos = text.find(name)
+        condition_start, condition_end = grep_part(text, pos, "(", ")")
+        condition = text[condition_start:condition_end]
+        body_start, body_end = grep_part(text, pos, "{", "}")
+        body = text[body_start:body_end]
+        #end_pos = text[pos:].find("}") + pos + 1
+        #if end_pos == -1:
+        #    raise Exception("No matching } found")
+        return (pos, body_end+1, condition, body)
+
+
+    if "while" in text_script:
+        pos, end_pos, condition, body = grep_statement(text_script, "while")
+        body = advanced_preparsing(body, level+1)
+        # Any operator in the condition expression
+        part = ":while_start" + str(level) + '\n'
+        for operator in operators:
+            if operator in condition:
+                var, constant = condition.split(operator)
+                part += "compare " + var + " " + constant + "\n"
+                part += "if " + contrary_operators[operator] + " jump :while_end" + str(level) + '\n'
+                break
+        else:
+            # We are checking a flag
+            if condition[0] == "!":
+                flag = condition[1:]
+                operator = "=="
+            else:
+                flag = condition
+                operator = "!="
+            part += "checkflag " + flag + "\n"
+            part += "if " + operator + " jump :while_end" + str(level) + '\n'
+        part += body + '\n'
+        part += "jump :while_start" + str(level) + "\n"
+        part += ":while_end" + str(level) + "\n"
+        text_script = text_script[:pos] + part + text_script[end_pos:]
+
+    # I'll refactor this one day, I promise =P
+    if re.search("if.?\(", text_script):
+        print(text_script)
+        pos, end_pos, condition, body = grep_statement(text_script, "if")
+        body = advanced_preparsing(body)
+        # Any operator in the condition expression
+        part = ''
+        for operator in operators:
+            if operator in condition:
+                var, constant = condition.split(operator)
+                part += "compare " + var + " " + constant + "\n"
+                part += "if " + contrary_operators[operator] + " jump :if_end" + str(level) + '\n'
+                break
+        else:
+            # We are checking a flag
+            if condition[0] == "!":
+                flag = condition[1:]
+                operator = "=="
+            else:
+                flag = condition
+                operator = "!="
+            part += "checkflag " + flag + "\n"
+            part += "if " + operator + " jump :if_end" + str(level) # + '\n'
+        part += body + '\n'
+        part += ":if_end" + str(level) # + "\n"
+        text_script = text_script[:pos] + part + text_script[end_pos:]
+
+    if "else" in text_script:
+        raise Exception("Syntax error: 'else' without if?")
+
+    print(text_script)
+    print("-"*20)
     return text_script
 
 # The basic language pre-parser
 def read_text_script(text_script, end_commands=["end", "softend"]):
-    text_script = apply_defs(text_script)
-    text_script = advanced_preparsing(text_script)
+    text_script = preparse(text_script)
     list_script = text_script.split("\n")
     #org = 0
     org_i = -1
@@ -65,6 +194,7 @@ def read_text_script(text_script, end_commands=["end", "softend"]):
 
     for num, line in enumerate(list_script):
         line = line.rstrip(" ")
+        # TODO: deprecated (done in preparsing)
         if "'" in line:                # Eliminem commentaris
             line = line[:line.find("'")]
             line = line.rstrip(" ")
@@ -153,8 +283,6 @@ def read_text_script(text_script, end_commands=["end", "softend"]):
                              "jumpstd or callstd.")
                     return None, error, dyn
                 operator = args[0]
-                operators = {"==": "1", "!=": "5", "<": "0", ">": "2",
-                                "<=": "3", ">=": "4"}
                 if operator in operators:
                     operator = operators[operator]
                 words = [branch, operator, args[2]]
@@ -265,7 +393,7 @@ dynamic_start_offset = "800000"
 def put_offsets_labels(hex_chunks, text_script):
     for i, chunk in enumerate(hex_chunks):
         for label in chunk[2]:
-            #print(label)
+            print(label)
             name = label[0]
             pos = hex(int(chunk[0], 16) + label[1])
             text_script = text_script.replace(" " + name + " ",
@@ -288,6 +416,7 @@ def put_offsets(hex_chunks, text_script, file_name, dyn):
     #rom_text = binascii.hexlify(rom_text).upper()
     offsets_found_log = ''
     for i, chunk in enumerate(hex_chunks):
+        print(chunk)
         offset = chunk[0]
         part = chunk[1] # The hex chunk we have to put somewhere
         labels = chunk[2]
@@ -309,11 +438,14 @@ def put_offsets(hex_chunks, text_script, file_name, dyn):
                                           " " + hex(offset_with_free_space) + " ")
         text_script = text_script.replace(" " + offset + "\n",
                                           " " + hex(offset_with_free_space) + "\n")
+        hex_chunks[i][0] = hex(offset_with_free_space)
         alen += length + 10
         offsets_found_log += (offset + ' - ' +
                               hex(offset_with_free_space) + '\n')
-        for label in labels:
-            offset = offset_with_
+        #for label in labels:
+        #    print(label)
+        #    offset = offset_with_free_space + label[1] # FIXME: ?
+        #    text_script.replace(label[0], hex(offset))
         #print(offset, "-", offset_with_free_space)
     # TODO: Comprovar si ha quedat alguna direcció (en un argument) dinàmica
     return text_script, None, offsets_found_log
@@ -332,24 +464,6 @@ def write_hex_script(hex_scripts, rom_file_name):
 
         with open(file_name, "wb") as f:
             f.write(rom_ba)
-
-
-        #rom_file_r = open(file_name, "rb")
-        #rom_text = rom_file_r.read()
-        #rom_file_w = open(file_name, "wb")
-        #offset = script[0]
-#       # print offset
-        #hex_script = script[1]
-        #print("chunk length = " + str(len(hex_script) // 2))
-        #b_script = binascii.unhexlify(hex_script)
-        #rom_text_first_part = rom_text[:int(offset, 16)]
-#       # print binascii.b2a_hex(rom_text_first_part)
-        #rom_text_final_part = rom_text[int(offset, 16) + len(b_script):]
-        #new_rom = rom_text_first_part + b_script + rom_text_final_part
-#       # print binascii.b2a_hex(new_rom)
-        #rom_file_w.write(new_rom)
-        #rom_file_r.close()
-        #rom_file_w.close()
 
 
 def decompile(file_name, offset, type_="script", info=False):
