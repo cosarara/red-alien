@@ -6,3 +6,8 @@ python3
 pyqt
 python-qscintilla
 
+You can run asc.py for CLI or asc_gui_qt.py for GUI.
+
+
+Most of the command's information was taken from PKSV's pokedef.h
+
