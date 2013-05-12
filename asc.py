@@ -131,7 +131,7 @@ def advanced_preparsing(text_script, level=0):
         for operator in operators:
             if operator in condition:
                 var, constant = condition.split(operator)
-                part += "compare " + var + " " + constant + "\n"
+                part += "compare " + var.strip() + " " + constant.strip() + "\n"
                 part += "if " + contrary_operators[operator] + " jump :while_end" + str(level) + '\n'
                 break
         else:
@@ -159,7 +159,7 @@ def advanced_preparsing(text_script, level=0):
         for operator in operators:
             if operator in condition:
                 var, constant = condition.split(operator)
-                part += "compare " + var + " " + constant + "\n"
+                part += "compare " + var.strip() + " " + constant.strip() + "\n"
                 part += "if " + contrary_operators[operator] + " jump :if_end" + str(level) + '\n'
                 break
         else:
@@ -219,7 +219,8 @@ def read_text_script(text_script, end_commands=["end", "softend"]):
             parsed_list[org_i].append([line])
             continue
 
-        words = line.split(" ")
+        #words = line.split(" ")
+        words = line.split()
         command = words[0]
         args = words[1:]
 
@@ -233,11 +234,13 @@ def read_text_script(text_script, end_commands=["end", "softend"]):
             arg_num = 0
 
         if len(args) != arg_num and command != '=':
-            error = "ERROR: wrong argument number in line " + str(num + 1)
-            error += "\nargs given: " + str(len(args))
+            error = "ERROR: wrong argument number in line " + str(num + 1) + '\n'
+            error += line + '\n'
+            error += str(args) + '\n'
+            error += "Args given: " + str(len(args)) + '\n'
             if (pk.pkcommands[command]['args'] and
                 pk.pkcommands[command]['args'][0]):
-                error += ("args needed: " + pk.pkcommands[command]['args'][0]
+                error += ("Args needed: " + pk.pkcommands[command]['args'][0]
                           + " " + str(pk.pkcommands[command]['args'][1]))
             return None, error, dyn
 
