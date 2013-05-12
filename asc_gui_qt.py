@@ -34,6 +34,9 @@ class Window(QtGui.QMainWindow):
         QtCore.QObject.connect(self.ui.actionLoad_ROM,
                                QtCore.SIGNAL("triggered()"),
                                self.load_rom)
+        QtCore.QObject.connect(self.ui.actionQuit,
+                               QtCore.SIGNAL("triggered()"),
+                               quit)
         QtCore.QObject.connect(self.ui.actionDecompile,
                                QtCore.SIGNAL("triggered()"),
                                self.decompile)
@@ -72,7 +75,7 @@ class Window(QtGui.QMainWindow):
 
         #print(dir(self.ui))
         #QtCore.QObject.connect(self.ui.lineEdit, QtCore.SIGNAL("returnPressed()"), self.add_entry)
- 
+
     def load_file(self):
         fn = QtGui.QFileDialog.getOpenFileName(self, 'Open file', 
                                                QtCore.QDir.homePath(),
@@ -81,12 +84,12 @@ class Window(QtGui.QMainWindow):
         if not fn:
             return
         self.file_name = fn
-        
+
         with open(fn, 'r') as f:        
             text = f.read()
             self.ui.textEdit.setText(text)
         self.ui.statusbar.showMessage("loaded " + fn)
-    
+
     def new_file(self):
         #TODO: Unsaved changes!
         self.file_name = ''
@@ -120,17 +123,17 @@ class Window(QtGui.QMainWindow):
         if not fn:
             return
         self.rom_file_name = fn
-        
+
         #with open(fn, 'rb') as f:        
         #    self.rom_contents = f.read()
         #self.ui.statusbar.showMessage("loaded ROM " + fn)
-    
+
     def action_compile(self):
         self.compile("compile")
-    
+
     def action_debug(self):
         self.compile("debug")
-    
+
     def decompile(self, offset=None):
         if not self.rom_file_name:
             QtGui.QMessageBox.critical(self, "Error", "No ROM loaded")
@@ -159,15 +162,16 @@ class Window(QtGui.QMainWindow):
         if not self.rom_file_name:
             QtGui.QMessageBox.critical(self, "Error", "No ROM loaded")
             return
-        with open(self.rom_file_name, 'rb') as f:        
-            self.rom_contents = f.read()
+        #with open(self.rom_file_name, 'rb') as f:
+        #    self.rom_contents = f.read()
         script = str(self.ui.textEdit.text())
         script = script.replace("\r\n", "\n")
-        preparsed_script, error, dyn = asc.read_text_script(script)
+        script = asc.preparse(script)
+        parsed_script, error, dyn = asc.read_text_script(script)
         if error:
             QtGui.QMessageBox.critical(self, "Error", error)
             return
-        hex_script, error = asc.compile_script(preparsed_script)
+        hex_script, error = asc.compile_script(parsed_script)
         if error:
             QtGui.QMessageBox.critical(self, "Error", error)
             return
@@ -177,19 +181,32 @@ class Window(QtGui.QMainWindow):
             #print "going dynamic!"
             script, error, log = asc.put_offsets(hex_script, script,
                                                  self.rom_file_name, dyn[1])
+            script = asc.put_offsets_labels(hex_script, script)
             #print script
             #print "re-preparsing"
-            preparsed_script, error, dyn = asc.read_text_script(script)
+            parsed_script, error, dyn = asc.read_text_script(script)
             if error:
                 self.error_message(error)
                 return
             #print "recompiling"
-            hex_script, error = asc.compile_script(preparsed_script)
+            hex_script, error = asc.compile_script(parsed_script)
             if error:
                 QtGui.QMessageBox.critical(self, "Error", error)
                 self.error_message(error)
                 return
             #print "yay!"
+        else:
+            script = asc.put_offsets_labels(hex_script, script)
+            parsed_script, error, dyn = asc.read_text_script(script)
+            if error:
+                self.error_message(error)
+                return
+            hex_script, error = asc.compile_script(parsed_script)
+            if error:
+                QtGui.QMessageBox.critical(self, "Error", error)
+                self.error_message(error)
+                return
+
         if mode == "compile":
             asc.write_hex_script(hex_script, self.rom_file_name)
             QtGui.QMessageBox.information(self, "Done!",
