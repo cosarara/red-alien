@@ -177,7 +177,7 @@ def advanced_preparsing(text_script, level=0):
         if re.match("\\selse\\s*?{", text_script[end_pos:]):
             else_body_start, else_body_end = grep_part(text_script, end_pos, "{", "}")
             else_body = text_script[else_body_start:else_body_end]
-            print(else_body)
+            else_body = advanced_preparsing(else_body, level+1)
             #quit()
             part += "jump :else_end" + str(level) + "\n"
             part += ":if_end" + str(level) + "\n"
