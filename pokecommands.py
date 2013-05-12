@@ -286,7 +286,7 @@ aliases = {"waitmovement": "pauseevent",
            "goto": "jump",
            "nop": "nop0"}
 
-pkcommands_and_aliases = pkcommands
+pkcommands_and_aliases = pkcommands.copy()
 for alias in aliases:
     normal_name = aliases[alias]
     pkcommands_and_aliases[alias] = pkcommands[normal_name]
