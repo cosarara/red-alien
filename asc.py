@@ -173,11 +173,24 @@ def advanced_preparsing(text_script, level=0):
             part += "checkflag " + flag + "\n"
             part += "if " + operator + " jump :if_end" + str(level) # + '\n'
         part += body + '\n'
-        part += ":if_end" + str(level) # + "\n"
+        # else
+        if re.match("\\selse\\s*?{", text_script[end_pos:]):
+            else_body_start, else_body_end = grep_part(text_script, end_pos, "{", "}")
+            else_body = text_script[else_body_start:else_body_end]
+            print(else_body)
+            #quit()
+            part += "jump :else_end" + str(level) + "\n"
+            part += ":if_end" + str(level) + "\n"
+            part += else_body + '\n' + ':else_end' + str(level) + '\n'
+            end_pos = else_body_end + 1
+
+        else:
+            part += ":if_end" + str(level) # + "\n"
         text_script = text_script[:pos] + part + text_script[end_pos:]
 
-    if "else" in text_script:
-        raise Exception("Syntax error: 'else' without if?")
+    #if "else" in text_script:
+    #    print(text_script)
+    #    raise Exception("Syntax error: 'else' without if?")
 
     #print(text_script)
     #print("-"*20)
@@ -747,6 +760,8 @@ def main():
         print(log)
 
     elif args.command == "d":
+        if not args.end_commands_to_delete:
+            args.end_commands_to_delete = []
         for end_command in args.end_commands_to_delete:
             end_commands.remove(end_command)
         print(decompile(args.rom, int(args.offset, 16), end_commands=end_commands))
