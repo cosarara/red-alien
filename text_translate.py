@@ -47,7 +47,7 @@ def ascii_to_hex(astring, dictionary):
             #print "case1"
             if (astring[i + 2] in string.hexdigits and
                 astring[i + 3] in string.hexdigits):
-                trans_string += (str(int(astring[i+2:i+4], 16))).encode('utf-8')
+                trans_string += bytes(int(astring[i+2:i+4], 16),)
                 i += 3
         elif character in dictionary:
             #print "case normal"
