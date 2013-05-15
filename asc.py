@@ -38,8 +38,14 @@ def preparse(text_script):
     text_script = remove_comments(text_script)
     text_script = re.sub("^[ \t]*", "", text_script, flags=re.MULTILINE)
     text_script = apply_defs(text_script)
+    text_script = regexps(text_script)
     text_script = advanced_preparsing(text_script)
     #print(text_script)
+    return text_script
+
+def regexps(text_script):
+    # XSE 1.1.1 like msgboxes
+    text_script = re.sub(r"msgbox (.+?) (.+?)", r"msgbox \1\ncallstd \2", text_script)
     return text_script
 
 def remove_comments(text_script):
