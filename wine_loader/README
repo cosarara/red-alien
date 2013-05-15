@@ -1,0 +1,8 @@
+So well, I made this little hack/workaround to make it posible to integrate AM running in wine
+with the native ASC. I know, you could use ASC running in wine as well, but that's not cool.
+So well, just choose this loader.exe in script editor selection in AM, choose No when asked a
+question (obviously, who in hell would use ";"?), and that's it.
+Oh, and if you make any changes to the source .c file, you can recompile from linux using
+$ i486-mingw32-gcc -Wall loader.c
+(you'll need mingw32-gcc, of course)
+    ~cosarara97
