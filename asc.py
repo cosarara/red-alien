@@ -16,7 +16,7 @@
 #    You should have received a copy of the GNU General Public License
 #    along with ASC.  If not, see <http://www.gnu.org/licenses/>.
 
-#import sys
+import sys
 import pokecommands as pk
 import binascii
 import text_translate
@@ -184,7 +184,6 @@ def advanced_preparsing(text_script, level=0):
             else_body_start, else_body_end = grep_part(text_script, end_pos, "{", "}")
             else_body = text_script[else_body_start:else_body_end]
             else_body = advanced_preparsing(else_body, level+1)
-            #quit()
             part += "jump :else_end" + str(level) + "\n"
             part += ":if_end" + str(level) + "\n"
             part += else_body + '\n' + ':else_end' + str(level) + '\n'
@@ -682,13 +681,13 @@ def compile_without_writing(script, rom_file_name):
         print(parsed_script)
         if error:
             print(error)
-            quit()
+            sys.exit(1)
         print("compiling...")
         hex_script, error = compile_script(parsed_script)
         print(hex_script)
         if error:
             print(error)
-            quit()
+            sys.exit(1)
         log = ''
         print("doing dynamic and label things...")
         if dyn[0]:
@@ -704,12 +703,12 @@ def compile_without_writing(script, rom_file_name):
             parsed_script, error, dyn = read_text_script(script)
             if error:
                 print(error)
-                quit()
+                sys.exit(1)
             print("recompiling")
             hex_script, error = compile_script(parsed_script)
             if error:
                 print(error)
-                quit()
+                sys.exit(1)
             print("yay!")
         else:
             script = put_offsets_labels(hex_script, script)
@@ -749,7 +748,7 @@ def main():
     args = parser.parse_args()
     if not "command" in args:
         print("Error. Run with --help for more info.")
-        quit()
+        sys.exit(1)
 
     if args.command == "c":
         script = open_script(args.script)

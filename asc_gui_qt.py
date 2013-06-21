@@ -36,7 +36,7 @@ class Window(QtGui.QMainWindow):
                                self.load_rom)
         QtCore.QObject.connect(self.ui.actionQuit,
                                QtCore.SIGNAL("triggered()"),
-                               quit)
+                               sys.exit)
         QtCore.QObject.connect(self.ui.actionDecompile,
                                QtCore.SIGNAL("triggered()"),
                                self.decompile)
