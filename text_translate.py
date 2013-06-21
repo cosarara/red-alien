@@ -16,6 +16,10 @@
 #    You should have received a copy of the GNU General Public License
 #    along with ASC.  If not, see <http://www.gnu.org/licenses/>.
 
+
+# Compat. with python 3.2
+from __future__ import unicode_literals
+
 import string
 
 
