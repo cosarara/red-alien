@@ -80,7 +80,7 @@ class Window(QtGui.QMainWindow):
         fn = QtGui.QFileDialog.getOpenFileName(self, 'Open file', 
                                                QtCore.QDir.homePath(),
                                                "Pokemon script (*.pks);;"
-                                               "All files (*.*)")
+                                               "All files (*)")
         if not fn:
             return
         self.file_name = fn
@@ -98,17 +98,16 @@ class Window(QtGui.QMainWindow):
 
     def save_as(self):
         fn = QtGui.QFileDialog.getSaveFileName(self, 'Save file',
-                                               QtCore.QDir.homePath())
+                                               QtCore.QDir.homePath(),
+                                               "Pokemon Script (*.pks);;"
+                                               "All files (*)")
         if fn:
             self.file_name = fn
             self.save_file()
 
     def save_file(self):
         if not self.file_name:
-            fn = QtGui.QFileDialog.getSaveFileName(self, 'Save file',
-                                                   QtCore.QDir.homePath())
-            if not fn:
-                return
+            self.save_as()
         else:
             fn = self.file_name
         with open(fn, 'w') as f:
@@ -123,10 +122,6 @@ class Window(QtGui.QMainWindow):
         if not fn:
             return
         self.rom_file_name = fn
-
-        #with open(fn, 'rb') as f:        
-        #    self.rom_contents = f.read()
-        #self.ui.statusbar.showMessage("loaded ROM " + fn)
 
     def action_compile(self):
         self.compile("compile")
@@ -225,7 +220,7 @@ class Window(QtGui.QMainWindow):
                                       "(aka cosarara97)")
 
 
- 
+
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description='Advanced (Pokémon) Script Compiler')
     parser.add_argument('file', nargs='?')
@@ -236,10 +231,11 @@ if __name__ == "__main__":
     win.show()
     if args.file and not args.offset: # opening a script
         win.file_name = args.file
-        with open(args.file, 'r') as f:        
+        with open(args.file, 'r') as f:
             text = f.read()
         win.ui.textEdit.setText(text)
     elif args.offset:
         win.rom_file_name = args.file
         win.decompile(int(args.offset, 16))
     sys.exit(app.exec_())
+
