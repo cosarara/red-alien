@@ -4,3 +4,5 @@
 *.gba
 *.GBA
 __pycache__*
+examples/tests
+.directory
