@@ -185,6 +185,9 @@ class Window(QtGui.QMainWindow):
                 return
             #print "recompiling"
             hex_script, error = asc.compile_script(parsed_script)
+            # Remove the labels list, which will be empty and useless now 
+            for chunk in hex_script:
+                del chunk[2] # Will always be []
             if error:
                 QtGui.QMessageBox.critical(self, "Error", error)
                 self.error_message(error)
@@ -197,6 +200,9 @@ class Window(QtGui.QMainWindow):
                 self.error_message(error)
                 return
             hex_script, error = asc.compile_script(parsed_script)
+            # Remove the labels list, which will be empty and useless now 
+            for chunk in hex_script:
+                del chunk[2] # Will always be []
             if error:
                 QtGui.QMessageBox.critical(self, "Error", error)
                 self.error_message(error)
@@ -208,8 +214,9 @@ class Window(QtGui.QMainWindow):
                                           "Script compiled and written "
                                           "successfully")
         else:
+            # TODO: A custom message window with monospace font and scroll
             QtGui.QMessageBox.information(self, "Script in hex",
-                        str(hex_script))
+                        asc.nice_dbg_output(hex_script))
         if log:
             QtGui.QMessageBox.information(self, "log", log)
 

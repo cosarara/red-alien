@@ -40,10 +40,11 @@ def preparse(text_script):
     text_script = apply_defs(text_script)
     text_script = regexps(text_script)
     text_script = advanced_preparsing(text_script)
-    #print(text_script)
     return text_script
 
 def regexps(text_script):
+    ''' Part of the preparsing '''
+    # FIXME: We beak line numbers everywhere :(
     # XSE 1.1.1 like msgboxes
     text_script = re.sub(r"msgbox (.+?) (.+?)", r"msgbox \1\ncallstd \2", text_script)
     return text_script
@@ -57,6 +58,7 @@ def remove_comments(text_script):
 
 
 def apply_defs(text_script):
+    ''' Runs the #define substitutions '''
     list_script = text_script.split("\n")
     for n, line in enumerate(list_script):
         if "'" in line:
@@ -67,17 +69,17 @@ def apply_defs(text_script):
             name = words[1]
             value = words[2]
             if command == "#define":
-                # Because CAMERA mustn't override CAMERA_START
+                # Because CAMERA mustn't conflict with CAMERA_START
                 text_script = text_script.replace(" " + name + " ",
                                                   " " + value + " ")
                 text_script = text_script.replace(" " + name + "\n",
                                                   " " + value + "\n")
     text_script = text_script.replace("#define", "'#define")
-    #print text_script
     return text_script
 
-# Here we'll make the compiler really advanced :)
 def advanced_preparsing(text_script, level=0):
+    ''' The awesome preparsing (actually you could call it compiling)
+        of cool stuctures '''
     # Okay, so this is what we want:
     # 1. ----------- while -----------
     # while (<expression>) {
@@ -113,8 +115,6 @@ def advanced_preparsing(text_script, level=0):
             raise Exception("No matching " + close + " found")
         end_pos = start_pos + i
         return start_pos, end_pos
-        #return text[text[start_pos:].find(open) + start_pos + 1:
-        #            text[start_pos:].find(close) + start_pos]
 
     def grep_statement(text, name):
         pos = text.find(name)
@@ -122,9 +122,6 @@ def advanced_preparsing(text_script, level=0):
         condition = text[condition_start:condition_end]
         body_start, body_end = grep_part(text, pos, "{", "}")
         body = text[body_start:body_end]
-        #end_pos = text[pos:].find("}") + pos + 1
-        #if end_pos == -1:
-        #    raise Exception("No matching } found")
         return (pos, body_end+1, condition, body)
 
 
@@ -138,7 +135,8 @@ def advanced_preparsing(text_script, level=0):
             if operator in condition:
                 var, constant = condition.split(operator)
                 part += "compare " + var.strip() + " " + constant.strip() + "\n"
-                part += "if " + contrary_operators[operator] + " jump :while_end" + str(level) + '\n'
+                part += ("if " + contrary_operators[operator] +
+                         " jump :while_end" + str(level) + '\n')
                 break
         else:
             # We are checking a flag
@@ -157,7 +155,6 @@ def advanced_preparsing(text_script, level=0):
 
     # I'll refactor this one day, I promise =P
     if re.search("if.?\(", text_script):
-        #print(text_script)
         pos, end_pos, condition, body = grep_statement(text_script, "if")
         body = advanced_preparsing(body)
         # Any operator in the condition expression
@@ -166,7 +163,8 @@ def advanced_preparsing(text_script, level=0):
             if operator in condition:
                 var, constant = condition.split(operator)
                 part += "compare " + var.strip() + " " + constant.strip() + "\n"
-                part += "if " + contrary_operators[operator] + " jump :if_end" + str(level) + '\n'
+                part += ("if " + contrary_operators[operator] +
+                         " jump :if_end" + str(level) + '\n')
                 break
         else:
             # We are checking a flag
@@ -193,19 +191,11 @@ def advanced_preparsing(text_script, level=0):
             part += ":if_end" + str(level) # + "\n"
         text_script = text_script[:pos] + part + text_script[end_pos:]
 
-    #if "else" in text_script:
-    #    print(text_script)
-    #    raise Exception("Syntax error: 'else' without if?")
-
-    #print(text_script)
-    #print("-"*20)
     return text_script
 
-# The basic language pre-parser
 def read_text_script(text_script, end_commands=["end", "softend"]):
-    #text_script = preparse(text_script)
+    ''' The basic language preparsing function '''
     list_script = text_script.split("\n")
-    #org = 0
     org_i = -1
     has_org = False
     dyn = (False, 0)
@@ -224,7 +214,6 @@ def read_text_script(text_script, end_commands=["end", "softend"]):
             parsed_list[org_i].append([line])
             continue
 
-        #words = line.split(" ")
         words = line.split()
         command = words[0]
         args = words[1:]
@@ -270,22 +259,15 @@ def read_text_script(text_script, end_commands=["end", "softend"]):
             elif has_org is False:
                 print(command)
                 error = ("ERROR: No #org found - " + str(num))
-                #print line
                 return None, error, dyn
 
             elif command in end_commands or words == ["#raw", "0xFE"]:
-                #print "END"
                 parsed_list[org_i].append(words)
-                #org_i += 1
                 has_org = False
 
             elif command == "=":
                 has_org = False
                 parsed_list[org_i].append(line)
-                #org_i += 1
-
-#            elif command == "#raw":
-#                parsed_list.append(args)
 
             elif command == "if":
                 if len(args) != 3:
@@ -317,8 +299,6 @@ def read_text_script(text_script, end_commands=["end", "softend"]):
                 if arg[0] in (":", "@"):
                     continue
                 arg_len = pk.pkcommands[command]["args"][1][i]
-                #print "arg_len = " + str(arg_len)
-                #print arg
                 if arg[:2] == "0x":
                     this_arg_len = len(arg[2:]) // 2
                 else:
@@ -330,12 +310,11 @@ def read_text_script(text_script, end_commands=["end", "softend"]):
                     error = ("ERROR: Arg too long (" + str(arg_len) + ", " +
                              str(this_arg_len) + ") on line " + str(num + 1))
                     return None, error, dyn
-        #print line
-    #print parsed_list
     return parsed_list, None, dyn
 
 
 def compile_script(script_list):
+    ''' Compile parsed script list '''
     hex_scripts = []
     for script in script_list:
         hex_script = [script[0], b"", []]  # hex_script = [offset, "bytes",
@@ -361,16 +340,13 @@ def compile_script(script_list):
                 for i, arg in enumerate(args):
                     if arg[0] != "@" and arg[0] != ":":
                         arg_len = pk.pkcommands[command]["args"][1][i]
-                        #print arg_len
                         if arg[0:2] != "0x":
-                            #print arg
                             arg = (int(arg) & 0xffffff)
                         else:
                             arg = (int(arg, 16) & 0xffffff)
                         if ("offset" in pk.pkcommands[command] and
                             pk.pkcommands[command]["offset"][0] == i):
                             arg |= 0x8000000
-                        #if len(arg.to_bytes("little")) // 2 > arg_len:
                         try:
                             arg_bytes = arg.to_bytes(arg_len, "little")
                         except OverflowError:
@@ -381,15 +357,6 @@ def compile_script(script_list):
                                      "Arg: " + hex(arg) +
                                      "\nCommand: " + command)
                             return None, error
-                        #if len(arg) // 2 < arg_len:
-                        #    if len(arg) // 2 < 4 and arg_len == 4:
-                        #        arg = (b"\x08" + b"\x00" *
-                        #               (arg_len - len(arg)) + arg
-                        #    else:
-                        #        arg = b"\x00" * (arg_len - len(arg) // 2) + arg
-#                                print "arg with 00", arg
-                        # Si hi ha alguna cosa a afegir davant les comandes
-                        #arg = bytefy.permutate(arg)
                         if len(pk.pkcommands[command]["args"]) == 3:
                             arg_bytes = (pk.pkcommands[command]["args"][2] +
                                          arg_bytes)
@@ -408,16 +375,16 @@ def compile_script(script_list):
                         hexargs += arg
                 hex_script[1] += hexcommand.to_bytes(1, "little") + hexargs
         hex_scripts.append(hex_script)
-#    print hex_scripts
     return hex_scripts, None
 
 
 dynamic_start_offset = "800000"
 
 def put_offsets_labels(hex_chunks, text_script):
+    ''' Calculates the real offset for :labels and does the needed
+        searches and replacements. '''
     for i, chunk in enumerate(hex_chunks):
         for label in chunk[2]:
-            #print('lo'*10)
             print(label)
             name = label[0]
             pos = hex(int(chunk[0], 16) + label[1])
@@ -428,19 +395,16 @@ def put_offsets_labels(hex_chunks, text_script):
                                               " " + pos + "\n")
             text_script = text_script.replace("\n" + name + "\n", "\n")
             text_script = text_script.replace("\n" + name + " ", "\n")
-    #print(text_script)
     return text_script
 
 
 def put_offsets(hex_chunks, text_script, file_name, dyn):
-#    print dynamic_start_offset
-    #dynamic_start = int(dynamic_start_offset, 16) * 2
+    ''' Find free space and replace #dynamic addresses with real offsets '''
     dynamic_start = int(dyn, 16)
     alen = 0
     rom_file_r = open(file_name, "rb")
     rom_bytes = rom_file_r.read()
     rom_file_r.close()
-    #rom_text = binascii.hexlify(rom_text).upper()
     offsets_found_log = ''
     for i, chunk in enumerate(hex_chunks):
         print(chunk)
@@ -458,9 +422,8 @@ def put_offsets(hex_chunks, text_script, file_name, dyn):
             print(len(free_space))
             print(dynamic_start)
             print(alen)
-            print("No free space to put script.")
-            exit(1)
-        #hex_script[i][0] = offset_with_free_space
+            raise Exception("No free space to put script.")
+            #exit(1)
         text_script = text_script.replace(" " + offset + " ",
                                           " " + hex(offset_with_free_space) + " ")
         text_script = text_script.replace(" " + offset + "\n",
@@ -469,16 +432,13 @@ def put_offsets(hex_chunks, text_script, file_name, dyn):
         alen += length + 10
         offsets_found_log += (offset + ' - ' +
                               hex(offset_with_free_space) + '\n')
-        #for label in labels:
-        #    print(label)
-        #    offset = offset_with_free_space + label[1] # FIXME: ?
-        #    text_script.replace(label[0], hex(offset))
-        #print(offset, "-", offset_with_free_space)
     # TODO: Comprovar si ha quedat alguna direcció (en un argument) dinàmica
+    #       (No hauria)
     return text_script, None, offsets_found_log
 
 
 def write_hex_script(hex_scripts, rom_file_name):
+    ''' Write every chunk of bytes onto the big ROM file '''
     file_name = rom_file_name
     for script in hex_scripts:
         with open(file_name, "rb") as f:
@@ -504,35 +464,24 @@ def decompile(file_name, offset, type_="script", info=False, end_commands=end_co
     textscript = ''
     decompiled_offsets = []
     while offsets:
-        #print(offsets[0])
         offset = offsets[0][0] & 0xffffff
-        #if len(hex(offset)[2:]) == 8 and offset[:2] == "08":
-        #    offset = offset[2:]
         type_ = offsets[0][1]
         if type_ == "script":
-            textscript_, new_offsets = decompile_script(rombytes, offset, offsets, end_commands=end_commands)
-            #print("in " + hex(offset) + " we found:")
-            #for offsetasdf in new_offsets:
-            #    print(hex(offsetasdf[0]))
-            #    print(offsetasdf[1])
-            #print("---")
+            textscript_, new_offsets = decompile_script(
+                                            rombytes, offset,
+                                            offsets, end_commands=end_commands)
             textscript += ("#org " + hex(offset) + "\n" +
                            textscript_ + "\n")
-#            added_offsets = list(set(offsets + offsets_))
             for new_offset in new_offsets:
                 new_offset[0] &= 0xffffff
                 if (new_offset not in offsets and
                         new_offset[0] not in decompiled_offsets):
                     offsets += [new_offset]
-                    #print ("going to add " + hex(new_offset[0])
-                    #       + " because it's not in "
-                    #       + str(decompiled_offsets))
         if type_ == "text":
             text = decompile_text(rombytes, offset)
             textscript += ("#org " + hex(offset) +
                            "\n= " + text + "\n\n")
         if type_ == "movs":
-            #print("movs")
             textscript_, offsets_ = decompile_movs(rombytes, offset)
             textscript += ("#org " + hex(offset) + "\n" +
                            textscript_ + "\n")
@@ -660,62 +609,92 @@ def decompile_text(romtext, offset):
     return translated_text
 
 
-def write_text_script(text, filename):
+def write_text_script(text, file_name):
     if using_windows:
         text = text.replace("\n", "\r\n")
-    pass
+    with open(file_name, "w") as script_file:
+        script_file.write(text)
 
 
 def open_script(file_name):
-    script_file = open(file_name, "r")
-    script_text = script_file.read()
+    ''' Open file and replace \\r\\n with \\n '''
+    with open(file_name, "r") as script_file:
+        script_text = script_file.read()
     script_text = script_text.replace("\r\n", "\n")
     return script_text
 
 def compile_without_writing(script, rom_file_name):
-        print("preparsing...")
-        script = preparse(script)
+    ''' Compiles a plain script and returns a tuple containing
+        a list and a string. The string is the #dyn log.
+        The list contains a list for every location where
+        something should be written. These lists are 2
+        elements each, the offset where data should be
+        written and the data itself '''
+    print("preparsing...")
+    script = preparse(script)
+    print(script)
+    print("parsing...")
+    parsed_script, error, dyn = read_text_script(script)
+    print(parsed_script)
+    if error:
+        raise Exception(error)
+        #print(error)
+        #sys.exit(1)
+    print("compiling...")
+    hex_script, error = compile_script(parsed_script)
+    print(hex_script)
+    if error:
+        raise Exception(error)
+        #print(error)
+        #sys.exit(1)
+    log = ''
+    print("doing dynamic and label things...")
+    if dyn[0] and rom_file_name:
+        print("going dynamic!")
+        print("replacing dyn addresses by offsets...")
+        script, error, log = put_offsets(hex_script, script,
+                                         rom_file_name, dyn[1])
         print(script)
-        print("parsing...")
+        print("re-preparsing")
+        script = put_offsets_labels(hex_script, script)
+        print(script)
+
         parsed_script, error, dyn = read_text_script(script)
-        print(parsed_script)
         if error:
-            print(error)
-            sys.exit(1)
-        print("compiling...")
+            raise Exception(error)
+            #print(error)
+            #sys.exit(1)
+        print("recompiling")
         hex_script, error = compile_script(parsed_script)
-        print(hex_script)
         if error:
-            print(error)
-            sys.exit(1)
-        log = ''
-        print("doing dynamic and label things...")
-        if dyn[0]:
-            print("going dynamic!")
-            print("replacing dyn addresses by offsets...")
-            script, error, log = put_offsets(hex_script, script,
-                                             rom_file_name, dyn[1])
-            print(script)
-            print("re-preparsing")
-            script = put_offsets_labels(hex_script, script)
-            print(script)
+            raise Exception(error)
+            #print(error)
+            #sys.exit(1)
+        print("yay!")
+    else:
+        script = put_offsets_labels(hex_script, script)
+        parsed_script, error, dyn = read_text_script(script)
+        hex_script, error = compile_script(parsed_script)
 
-            parsed_script, error, dyn = read_text_script(script)
-            if error:
-                print(error)
-                sys.exit(1)
-            print("recompiling")
-            hex_script, error = compile_script(parsed_script)
-            if error:
-                print(error)
-                sys.exit(1)
-            print("yay!")
-        else:
-            script = put_offsets_labels(hex_script, script)
-            parsed_script, error, dyn = read_text_script(script)
-            hex_script, error = compile_script(parsed_script)
-        return hex_script, log
+    # Remove the labels list, which will be empty and useless now 
+    for chunk in hex_script:
+        del chunk[2] # Will always be []
+    return hex_script, log
 
+def nice_dbg_output(hex_scripts):
+    text = ''
+    for offset, hex_script in hex_scripts:
+        script_text = offset + '\n'
+        line = ''
+        for byte in hex_script:
+            line += '%02x ' % byte
+            if len(line) > 40:
+                script_text += line + '\n'
+                line = ''
+        script_text += line
+        script_text += '\n'
+        text += script_text
+    return text
 
 
 def main():
@@ -747,8 +726,9 @@ def main():
 
     args = parser.parse_args()
     if not "command" in args:
-        print("Error. Run with --help for more info.")
-        sys.exit(1)
+        raise Exception("Error. Run with --help for more info.")
+        #print("Error. Run with --help for more info.")
+        #sys.exit(1)
 
     if args.command == "c":
         script = open_script(args.script)
