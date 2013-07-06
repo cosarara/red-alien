@@ -21,8 +21,10 @@
 from __future__ import unicode_literals
 
 import string
-
-with open("pktext.tbl", "r") as table_file:
+import os
+module_dir = os.path.dirname(os.path.abspath(__file__))
+path = os.path.join(module_dir, "pktext.tbl")
+with open(path, "r") as table_file:
     table_str = table_file.read().rstrip("\n")
 table = table_str
 
