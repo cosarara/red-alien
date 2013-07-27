@@ -40,6 +40,7 @@ def preparse(text_script):
     text_script = apply_defs(text_script)
     text_script = regexps(text_script)
     text_script = advanced_preparsing(text_script)
+    #exit(2)
     return text_script
 
 def regexps(text_script):
@@ -47,6 +48,8 @@ def regexps(text_script):
     # FIXME: We beak line numbers everywhere :(
     # XSE 1.1.1 like msgboxes
     text_script = re.sub(r"msgbox (.+?) (.+?)", r"msgbox \1\ncallstd \2", text_script)
+    # Join lines ending with \
+    text_script = re.sub("\\\\\\n", r"", text_script)
     return text_script
 
 def remove_comments(text_script):
@@ -72,6 +75,10 @@ def apply_defs(text_script):
                 # Because CAMERA mustn't conflict with CAMERA_START
                 text_script = text_script.replace(" " + name + " ",
                                                   " " + value + " ")
+                text_script = text_script.replace("(" + name + " ",
+                                                  "(" + value + " ")
+                text_script = text_script.replace(" " + name + ")",
+                                                  " " + value + ")")
                 text_script = text_script.replace(" " + name + "\n",
                                                   " " + value + "\n")
     text_script = text_script.replace("#define", "'#define")
@@ -117,7 +124,8 @@ def advanced_preparsing(text_script, level=0):
         return start_pos, end_pos
 
     def grep_statement(text, name):
-        pos = text.find(name)
+        #pos = text.find(name)
+        pos = re.search(name + ".?\(", text).start()
         condition_start, condition_end = grep_part(text, pos, "(", ")")
         condition = text[condition_start:condition_end]
         body_start, body_end = grep_part(text, pos, "{", "}")
@@ -126,7 +134,7 @@ def advanced_preparsing(text_script, level=0):
 
 
     #if "while" in text_script:
-    if re.search("while.?\(", text_script):
+    while re.search("while.?\(", text_script):
         pos, end_pos, condition, body = grep_statement(text_script, "while")
         body = advanced_preparsing(body, level+1)
         # Any operator in the condition expression
@@ -152,11 +160,13 @@ def advanced_preparsing(text_script, level=0):
         part += "jump :while_start" + str(level) + "\n"
         part += ":while_end" + str(level) + "\n"
         text_script = text_script[:pos] + part + text_script[end_pos:]
+        level += 1
 
     # I'll refactor this one day, I promise =P
-    if re.search("if.?\(", text_script):
+    while re.search("if.?\(", text_script):
         pos, end_pos, condition, body = grep_statement(text_script, "if")
         body = advanced_preparsing(body)
+        have_else = re.match("\\selse\\s*?{", text_script[end_pos:])
         # Any operator in the condition expression
         part = ''
         for operator in operators:
@@ -177,8 +187,7 @@ def advanced_preparsing(text_script, level=0):
             part += "checkflag " + flag + "\n"
             part += "if " + operator + " jump :if_end" + str(level) # + '\n'
         part += body + '\n'
-        # else
-        if re.match("\\selse\\s*?{", text_script[end_pos:]):
+        if have_else:
             else_body_start, else_body_end = grep_part(text_script, end_pos, "{", "}")
             else_body = text_script[else_body_start:else_body_end]
             else_body = advanced_preparsing(else_body, level+1)
@@ -190,6 +199,8 @@ def advanced_preparsing(text_script, level=0):
         else:
             part += ":if_end" + str(level) # + "\n"
         text_script = text_script[:pos] + part + text_script[end_pos:]
+        print(text_script)
+        level += 1
 
     return text_script
 
@@ -585,13 +596,13 @@ def decompile_movs(romtext, offset, end_hex_commands=[0xFE, 0xFF]):
         except IndexError:
             break
 #        print i, len(hexscript)
-        print("hex command = " + hex(hex_command))
+        #print("hex command = " + hex(hex_command))
         text_command = "#raw"
         textscript += "#raw " + hex(hex_command)
         i += 1
         textscript += "\n"
-        print("text_command = " + text_command + ", hex_command = "
-               + hex(hex_command))
+        #print("text_command = " + text_command + ", hex_command = "
+        #       + hex(hex_command))
     print("textscript =", textscript)
     return textscript, []
 
@@ -752,7 +763,9 @@ def main():
             args.end_commands_to_delete = []
         for end_command in args.end_commands_to_delete:
             end_commands.remove(end_command)
-        print(decompile(args.rom, int(args.offset, 16), end_commands=end_commands))
+        print('-'*20 + '\n' +
+              decompile(args.rom, int(args.offset, 16),
+                        end_commands=end_commands))
 
 
 
