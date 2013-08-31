@@ -16,16 +16,18 @@
 #    You should have received a copy of the GNU General Public License
 #    along with ASC.  If not, see <http://www.gnu.org/licenses/>.
 
-
-# Compat. with python 3.2
-from __future__ import unicode_literals
-
 import string
 import os
-module_dir = os.path.dirname(os.path.abspath(__file__))
-path = os.path.join(module_dir, "pktext.tbl")
-with open(path, "r") as table_file:
-    table_str = table_file.read().rstrip("\n")
+import pkgutil
+try:
+    data = pkgutil.get_data('asc', os.path.join('data', 'pktext.tbl'))
+    table_str = data.decode("utf8").rstrip("\n")
+except:
+    table_str='FF=$$'
+#module_dir = os.path.dirname(os.path.abspath(__file__))
+#path = os.path.join("data", "pktext.tbl")
+#with open(path, "r", encoding="utf8") as table_file:
+#    table_str = table_file.read().rstrip("\n")
 table = table_str
 
 def read_table_encode(table_string=table_str):
@@ -59,14 +61,14 @@ def ascii_to_hex(astring, dictionary=read_table_encode(table_str)):
                 trans_string += bytes((int(astring[i+2:i+4], 16),))
                 i += 3
         elif character in dictionary:
-            print("case normal")
+            #print("case normal")
             trans_string += bytes((dictionary[character],))
         elif astring[i:i + 2] in dictionary:
-            print("case3")
+            #print("case3")
             trans_string += bytes((dictionary[astring[i:i + 2]],))
             i += 1
         else:  # (not tested)
-            print("else")
+            #print("else")
             length = 2
             while length < 10:
                 if astring[i:i + length] in dictionary:
@@ -91,6 +93,3 @@ def hex_to_ascii(string, dictionary=read_table_decode(table_str)):
     return trans_string
 
 
-#print type(read_table_decode(table)['1B'])
-#print ascii_to_hex(u"abcde ", read_table_encode(table))
-#print hex_to_ascii("E0D5E0D5E0D5E0D5E0D5E0D5", read_table_decode(table))

@@ -1,3 +1,4 @@
+// Yep, this is from PKSV
 /*
     Charles Daffern (Score_Under)'s PKSV - Pokemon ROM script viewer/editor
     Copyright (C) 2007  Charles Daffern

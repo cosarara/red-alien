@@ -6,3 +6,6 @@
 __pycache__*
 examples/tests
 .directory
+MANIFEST
+dist
+build

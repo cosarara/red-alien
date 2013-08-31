@@ -1,4 +1,4 @@
-Copyright Jaume Delclòs Coll 2012 (aka cosarara97)
+Copyright Jaume Delclòs Coll 2012-2013 (aka cosarara97)
 
 Advanced (Pokemon) Script Compiler
 Depends on:
@@ -6,13 +6,14 @@ python3
 pyqt
 python-qscintilla
 
-You can run asc.py for CLI or asc_gui_qt.py for GUI.
+To install (it's not necessary), run "./setup.py install" as root.
+You can run asc-cli for CLI or asc-qt for GUI.
 
 If you want pks syntax highlighting in vim, you can copy utils/pks.vim to
-~/.vim/syntax/, and add the following line to your .vimrc:
+$HOME/.vim/syntax/, and add the following line to your .vimrc:
 autocmd BufRead,BufNewFile *.pks set filetype=pks
 
 
 
-Most of the command's information was taken from PKSV's pokedef.h
+Most of the command's information was taken from PKSV's pokedef.h (Thanks!)
 

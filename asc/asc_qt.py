@@ -2,23 +2,25 @@
  
 import sys
 from PyQt4 import Qt, QtCore, QtGui
-from qtgui import Ui_MainWindow
-import asc
 import argparse
+import pkgutil
+import os
+from .qtgui import Ui_MainWindow
+from . import asc
 
-#class ASCSyntaxHighlighter(QtGui.QSyntaxHighlighter):
-#    def highlightBlock(self, text):
-#        # highlight code for ASC syntax
-#        myClassFormat = QTextCharFormat()
-#        myClassFormat.setFontWeight(QFont.Bold);
-#        myClassFormat.setForeground(Qt.darkRed);
-#        pass
- 
 class Window(QtGui.QMainWindow):
     def __init__(self, parent=None):
         QtGui.QWidget.__init__(self, parent)
         self.ui = Ui_MainWindow()
         self.ui.setupUi(self)
+
+        data = pkgutil.get_data('asc', os.path.join('data', 'icon.svg'))
+        icon = QtGui.QIcon()
+        pixmap = QtGui.QPixmap()
+        pixmap.loadFromData(data)
+        icon.addPixmap(pixmap, QtGui.QIcon.Normal, QtGui.QIcon.Off)
+        self.setWindowIcon(icon)
+
         QtCore.QObject.connect(self.ui.actionOpen,
                                QtCore.SIGNAL("triggered()"),
                                self.load_file)
@@ -227,8 +229,7 @@ class Window(QtGui.QMainWindow):
                                       "(aka cosarara97)")
 
 
-
-if __name__ == "__main__":
+def main():
     parser = argparse.ArgumentParser(description='Advanced (Pokémon) Script Compiler')
     parser.add_argument('file', nargs='?')
     parser.add_argument('offset', nargs='?')
@@ -245,4 +246,7 @@ if __name__ == "__main__":
         win.rom_file_name = args.file
         win.decompile(int(args.offset, 16))
     sys.exit(app.exec_())
+
+if __name__ == "__main__":
+    main()
 

@@ -17,12 +17,11 @@
 #    along with ASC.  If not, see <http://www.gnu.org/licenses/>.
 
 import sys
-import pokecommands as pk
 import binascii
-import text_translate
 import argparse
-#import bytefy
 import re
+from . import pokecommands as pk
+from . import text_translate
 
 using_windows = False
 using_dynamic = False
