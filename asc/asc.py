@@ -80,6 +80,8 @@ def apply_defs(text_script):
                                                   " " + value + ")")
                 text_script = text_script.replace(" " + name + "\n",
                                                   " " + value + "\n")
+                if name[0] == '[' and name [-1] == ']':
+                    text_script = text_script.replace(name, value)
     text_script = text_script.replace("#define", "'#define")
     return text_script
 
@@ -322,6 +324,22 @@ def read_text_script(text_script, end_commands=["end", "softend"]):
                     return None, error, dyn
     return parsed_list, None, dyn
 
+def autocut_text(text):
+    words = text.split(" ")
+    text = ''
+    line = ''
+    i = 0
+    delims = ('\\n', '\\p')
+    delim = 0
+    while i < len(words):
+        while i < len(words) and len(line+words[i]) < 35:
+            line += words[i] + " "
+            i += 1
+        text += line.rstrip(" ") + delims[delim]
+        delim = not delim
+        line = ''
+    text = text.rstrip('\\p').rstrip('\\n').rstrip(" ")
+    return text
 
 def compile_script(script_list):
     ''' Compile parsed script list '''
@@ -338,6 +356,7 @@ def compile_script(script_list):
                 # encoding table
                 e_table = text_translate.read_table_encode(text_table)
                 text = args[1:]
+                text = autocut_text(text)
                 hex_script[1] = text_translate.ascii_to_hex(text, e_table)
             elif command == '#raw':
                 hexcommand = args[0]
@@ -353,9 +372,10 @@ def compile_script(script_list):
                         if arg[0:2] != "0x":
                             arg = (int(arg) & 0xffffff)
                         else:
-                            arg = (int(arg, 16) & 0xffffff)
+                            #arg = (int(arg, 16) & 0xffffff)
+                            arg = int(arg, 16)
                         if ("offset" in pk.pkcommands[command] and
-                            pk.pkcommands[command]["offset"][0] == i):
+                                pk.pkcommands[command]["offset"][0] == i):
                             arg |= 0x8000000
                         try:
                             arg_bytes = arg.to_bytes(arg_len, "little")
