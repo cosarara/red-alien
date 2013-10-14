@@ -155,7 +155,7 @@ pkcommands = {
     "settrainerflag": {"hex": 0x62, "args": ("flag", (2,))},
     # TODO: Ask ASM guru difference:
     "movesprite2": {"hex": 0x63, "args": ("id, x, y", (2, 2, 2))},
-    "moveoffscreen": {"hex": 0x64, "args": ("sprite", (2))},
+    "moveoffscreen": {"hex": 0x64, "args": ("sprite", (2,))},
     "spritebehave": {"hex": 0x65, "args": ("sprite, type", (2, 1))},
     "showmsg": {"hex": 0x66},
     "message": {"hex": 0x67, "args": ("addr", (4,))},

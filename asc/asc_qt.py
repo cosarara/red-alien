@@ -230,6 +230,7 @@ class Window(QtGui.QMainWindow):
 
 
 def main():
+    print(sys.argv)
     parser = argparse.ArgumentParser(description='Advanced (Pokémon) Script Compiler')
     parser.add_argument('file', nargs='?')
     parser.add_argument('offset', nargs='?')
@@ -245,6 +246,8 @@ def main():
     elif args.offset:
         win.rom_file_name = args.file
         win.decompile(int(args.offset, 16))
+    else:
+        raise Exception("asdf!")
     sys.exit(app.exec_())
 
 if __name__ == "__main__":
