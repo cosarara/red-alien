@@ -2,8 +2,8 @@
 
 # Form implementation generated from reading ui file 'asc.ui'
 #
-# Created: Sun Dec 16 12:50:55 2012
-#      by: PyQt4 UI code generator 4.9.6
+# Created: Mon Jan 13 18:23:17 2014
+#      by: PyQt4 UI code generator 4.10.3
 #
 # WARNING! All changes made in this file will be lost!
 
@@ -28,7 +28,7 @@ class Ui_MainWindow(object):
         MainWindow.setObjectName(_fromUtf8("MainWindow"))
         MainWindow.resize(562, 473)
         icon = QtGui.QIcon()
-        icon.addPixmap(QtGui.QPixmap(_fromUtf8("icon.svg")), QtGui.QIcon.Normal, QtGui.QIcon.Off)
+        icon.addPixmap(QtGui.QPixmap(_fromUtf8("data/icon.svg")), QtGui.QIcon.Normal, QtGui.QIcon.Off)
         MainWindow.setWindowIcon(icon)
         self.centralwidget = QtGui.QWidget(MainWindow)
         self.centralwidget.setObjectName(_fromUtf8("centralwidget"))
@@ -41,7 +41,7 @@ class Ui_MainWindow(object):
         self.verticalLayout.addWidget(self.textEdit)
         MainWindow.setCentralWidget(self.centralwidget)
         self.menubar = QtGui.QMenuBar(MainWindow)
-        self.menubar.setGeometry(QtCore.QRect(0, 0, 562, 25))
+        self.menubar.setGeometry(QtCore.QRect(0, 0, 562, 21))
         self.menubar.setObjectName(_fromUtf8("menubar"))
         self.menuFile = QtGui.QMenu(self.menubar)
         self.menuFile.setObjectName(_fromUtf8("menuFile"))
@@ -87,6 +87,8 @@ class Ui_MainWindow(object):
         self.actionDebug.setObjectName(_fromUtf8("actionDebug"))
         self.actionAbout = QtGui.QAction(MainWindow)
         self.actionAbout.setObjectName(_fromUtf8("actionAbout"))
+        self.actionFind = QtGui.QAction(MainWindow)
+        self.actionFind.setObjectName(_fromUtf8("actionFind"))
         self.menuFile.addAction(self.actionNew)
         self.menuFile.addAction(self.actionOpen)
         self.menuFile.addSeparator()
@@ -103,6 +105,8 @@ class Ui_MainWindow(object):
         self.menuEdit.addSeparator()
         self.menuEdit.addAction(self.actionUndo)
         self.menuEdit.addAction(self.actionRedo)
+        self.menuEdit.addSeparator()
+        self.menuEdit.addAction(self.actionFind)
         self.menuROM.addAction(self.actionDecompile)
         self.menuROM.addAction(self.actionCompile)
         self.menuROM.addAction(self.actionDebug)
@@ -137,5 +141,6 @@ class Ui_MainWindow(object):
         self.actionCompile.setText(_translate("MainWindow", "Compile", None))
         self.actionDebug.setText(_translate("MainWindow", "Debug", None))
         self.actionAbout.setText(_translate("MainWindow", "About", None))
+        self.actionFind.setText(_translate("MainWindow", "Find", None))
 
 from PyQt4 import Qsci

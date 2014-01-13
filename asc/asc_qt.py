@@ -66,6 +66,11 @@ class Window(QtGui.QMainWindow):
         QtCore.QObject.connect(self.ui.actionRedo,
                                QtCore.SIGNAL("triggered()"),
                                self.ui.textEdit.redo)
+        QtCore.QObject.connect(self.ui.actionFind,
+                               QtCore.SIGNAL("triggered()"),
+                               self.find)
+        QtGui.QShortcut(QtGui.QKeySequence("Ctrl+F"), self.ui.textEdit,
+                self.find, context=QtCore.Qt.WidgetShortcut)
         QtCore.QObject.connect(self.ui.actionAbout,
                                QtCore.SIGNAL("triggered()"),
                                self.help_about)
@@ -228,12 +233,40 @@ class Window(QtGui.QMainWindow):
                                       "Copyright © 2012 Jaume Delclòs Coll\n"
                                       "(aka cosarara97)")
 
+    def find(self):
+        startline, starti = self.ui.textEdit.getCursorPosition()
+        print(startline, starti)
+        s, ok = QtGui.QInputDialog.getText(self, 'Find', 'Text to find:')
+        if not ok or not s:
+            return
+        t = self.ui.textEdit.text().split('\n')
+        b = 0 # break hack
+        for got_to_the_end in (0, 1):
+            for line_n, line in enumerate(t):
+                if startline > line_n and not got_to_the_end:
+                    # Skip lines before cursor
+                    continue
+                if startline == line_n:
+                    if got_to_the_end:
+                        break
+                    i = line[starti:].find(s)
+                    if i != -1:
+                        i += starti
+                else:
+                    i = line.find(s)
+                if i != -1:
+                    b = 1
+                    break
+            if b: break
+        if i == -1:
+            QtGui.QMessageBox.critical(self, "Error", "Text not found")
+            return
+        self.ui.textEdit.setCursorPosition(line_n, i+len(s))
 
 def main():
-    print(sys.argv)
     parser = argparse.ArgumentParser(description='Advanced (Pokémon) Script Compiler')
-    parser.add_argument('file', nargs='?')
-    parser.add_argument('offset', nargs='?')
+    parser.add_argument('file', nargs='?', help="Either a script or a ROM")
+    parser.add_argument('offset', nargs='?', help="Needed if the file is a ROM image")
     args = parser.parse_args()
     app = QtGui.QApplication(sys.argv)
     win = Window()
