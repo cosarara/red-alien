@@ -228,10 +228,10 @@ class Window(QtGui.QMainWindow):
             QtGui.QMessageBox.information(self, "log", log)
 
     def help_about(self):
-        QtGui.QMessageBox.about(self, "About ASC", "Advanced (Pokémon) Script "
-                                      "Compiler\n"
+        QtGui.QMessageBox.about(self, "About Red Alien", ("Red Alien,"
+                                      "the Advanced Pokémon Script Compiler\n"
                                       "Copyright © 2012 Jaume Delclòs Coll\n"
-                                      "(aka cosarara97)")
+                                      "(aka cosarara97)"))
 
     def find(self):
         startline, starti = self.ui.textEdit.getCursorPosition()
@@ -264,7 +264,7 @@ class Window(QtGui.QMainWindow):
         self.ui.textEdit.setCursorPosition(line_n, i+len(s))
 
 def main():
-    parser = argparse.ArgumentParser(description='Advanced (Pokémon) Script Compiler')
+    parser = argparse.ArgumentParser(description='Red Alien, the Advanced Pokémon Script Compiler')
     parser.add_argument('file', nargs='?', help="Either a script or a ROM")
     parser.add_argument('offset', nargs='?', help="Needed if the file is a ROM image")
     args = parser.parse_args()

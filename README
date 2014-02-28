@@ -1,6 +1,8 @@
 Copyright Jaume Delclòs Coll 2012-2013 (aka cosarara97)
+All the code but pokedef.h (which was taken from PKSV) is mine and under the GPL.
+Of course, the above copyright notice doesn't apply to pokedef.h
 
-Advanced (Pokemon) Script Compiler
+Red Alien - Formerly ASC (Advanced (Pokemon) Script Compiler)
 Depends on:
 python3
 pyqt
@@ -12,8 +14,6 @@ You can run asc-cli for CLI or asc-qt for GUI.
 If you want pks syntax highlighting in vim, you can copy utils/pks.vim to
 $HOME/.vim/syntax/, and add the following line to your .vimrc:
 autocmd BufRead,BufNewFile *.pks set filetype=pks
-
-
 
 Most of the command's information was taken from PKSV's pokedef.h (Thanks!)
 
