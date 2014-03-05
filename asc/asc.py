@@ -745,7 +745,7 @@ def main():
 
     global quiet, max_nops
     quiet = args.quiet
-    max_nops = args.max_nops
+    max_nops = (args.max_nops if max_nops in args else 10)
 
     if args.command == "c":
         script = open_script(args.script)

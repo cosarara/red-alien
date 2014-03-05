@@ -282,6 +282,8 @@ pkcommands = {
 # Alias:normal_name
 aliases = {"waitmovement": "pauseevent",
            "givepokemon": "addpokemon",
+           "giveitem": "additem",
+           "wildbattle": "battle",
            "#dynamic": "#dyn",
            "goto": "jump",
            "nop": "nop0"}
