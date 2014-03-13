@@ -9,12 +9,12 @@ try:
 except:
     version = "git"
 
-setup(name='ASC',
+setup(name='Blue Spider',
       version=version,
       description="The Pokemon Advanced Script Compiler for GBA",
       author="Jaume (cosarara97) Delclòs",
       author_email="cosarara97@gmail.com",
-      url="https://gitorious.org/advanced-script-compiler",
+      url="https://github.com/cosarara97/red-alien",
       packages=['asc'],
       package_data={'asc': ['data/*']},
       scripts=['asc-qt', 'asc-cli'],
