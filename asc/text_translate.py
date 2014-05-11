@@ -23,6 +23,7 @@ try:
     data = pkgutil.get_data('asc', os.path.join('data', 'pktext.tbl'))
     table_str = data.decode("utf8").rstrip("\n")
 except:
+    print("Warning: no table!")
     table_str='FF=$$'
 #module_dir = os.path.dirname(os.path.abspath(__file__))
 #path = os.path.join("data", "pktext.tbl")
