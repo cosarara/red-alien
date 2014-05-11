@@ -390,7 +390,7 @@ def compile_script(script_list):
                 # encoding table
                 e_table = text_translate.read_table_encode(text_table)
                 text = args[1:]
-                text = autocut_text(text)
+                #text = autocut_text(text)
                 hex_script[1] = text_translate.ascii_to_hex(text, e_table)
             elif command == '#raw':
                 hexcommand = args[0]
