@@ -115,8 +115,7 @@ class Window(QtGui.QMainWindow):
     def save_file(self):
         if not self.file_name:
             self.save_as()
-        else:
-            fn = self.file_name
+        fn = self.file_name
         with open(fn, 'w') as f:
             f.write(self.ui.textEdit.text())
         self.ui.statusbar.showMessage("file saved as " + fn)

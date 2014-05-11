@@ -20,6 +20,7 @@ import sys
 import binascii
 import argparse
 import re
+import ast
 from . import pokecommands as pk
 from . import text_translate
 
@@ -29,6 +30,8 @@ using_dynamic = False
 end_commands = ["end", "jump", "return"]
 end_lalmands = 25
 end_hex_commands = [0xFF]
+
+operators_list = ("==", "!=", "<=", ">=", "<", ">")
 
 operators = {"==": "1", "!=": "5", "<": "0", ">": "2",
              "<=": "3", ">=": "4"}
@@ -42,6 +45,7 @@ def debug(*args):
 def preparse(text_script):
     text_script = remove_comments(text_script)
     text_script = re.sub("^[ \t]*", "", text_script, flags=re.MULTILINE)
+    text_script = apply_includes(text_script)
     text_script = apply_defs(text_script)
     text_script = regexps(text_script)
     text_script = advanced_preparsing(text_script)
@@ -64,6 +68,27 @@ def remove_comments(text_script):
         text_script = re.sub(pattern, "", text_script, flags=re.MULTILINE)
     return text_script
 
+def find_nth(t, s, n, p=-1):
+        if n == 0:
+            return p
+        p_ = t.find(s)+1
+        return find_nth(t, t[p_:], n-1, p_+p)
+
+def apply_includes(text_script):
+    list_script = text_script.split("\n")
+    for n, line in enumerate(list_script):
+        if "'" in line:
+            line = line[:line.find("'") - 1]
+        words = line.split(" ")
+        if len(words) == 2:
+            command = words[0]
+            name = words[1]
+            if command == "#include":
+                name = ast.literal_eval(name)
+                with open(name) as f:
+                    t = f.read()
+                text_script = t + text_script
+    return text_script
 
 def apply_defs(text_script):
     ''' Runs the #define substitutions '''
@@ -86,9 +111,10 @@ def apply_defs(text_script):
                                                   " " + value + ")")
                 text_script = text_script.replace(" " + name + "\n",
                                                   " " + value + "\n")
-                if name[0] == '[' and name [-1] == ']':
+                if name[0] == '[' and name[-1] == ']':
                     text_script = text_script.replace(name, value)
     text_script = text_script.replace("#define", "'#define")
+    text_script = text_script.replace("#include", "'#include")
     return text_script
 
 def advanced_preparsing(text_script, level=0):
@@ -144,7 +170,7 @@ def advanced_preparsing(text_script, level=0):
         body = advanced_preparsing(body, level+1)
         # Any operator in the condition expression
         part = ":while_start" + str(level) + '\n'
-        for operator in operators:
+        for operator in operators_list:
             if operator in condition:
                 var, constant = condition.split(operator)
                 part += "compare " + var.strip() + " " + constant.strip() + "\n"
@@ -174,7 +200,7 @@ def advanced_preparsing(text_script, level=0):
         have_else = re.match("\\selse\\s*?{", text_script[end_pos:])
         # Any operator in the condition expression
         part = ''
-        for operator in operators:
+        for operator in operators_list:
             if operator in condition:
                 var, constant = condition.split(operator)
                 part += "compare " + var.strip() + " " + constant.strip() + "\n"
@@ -205,7 +231,7 @@ def advanced_preparsing(text_script, level=0):
         else:
             part += ":if_end" + str(level)
         text_script = text_script[:pos] + part + text_script[end_pos:]
-        debug(text_script)
+        #debug(text_script)
         level += 1
 
     return text_script
@@ -248,6 +274,9 @@ def read_text_script(text_script, end_commands=["end", "softend"]):
             error += line + '\n'
             error += str(args) + '\n'
             error += "Args given: " + str(len(args)) + '\n'
+            error += "Context:\n"
+            for line_num in range(num-3, num+6):
+                error += "    " + list_script[line_num] + "\n"
             if (pk.pkcommands[command]['args'] and
                 pk.pkcommands[command]['args'][0]):
                 error += ("Args needed: " + pk.pkcommands[command]['args'][0]
