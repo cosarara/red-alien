@@ -286,6 +286,7 @@ aliases = {"waitmovement": "pauseevent",
            "wildbattle": "battle",
            "#dynamic": "#dyn",
            "goto": "jump",
+           "closeonkeypress": "closemsg",
            "nop": "nop0"}
 
 pkcommands_and_aliases = pkcommands.copy()
