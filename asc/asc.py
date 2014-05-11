@@ -59,6 +59,9 @@ def regexps(text_script):
             text_script)
     # Join lines ending with \
     text_script = re.sub("\\\\\\n", r"", text_script)
+    for label in re.findall(r"@\S+", text_script, re.MULTILINE):
+        if not "#org "+label in text_script:
+            raise Exception("ERROR: Unmatched @ label %s" % label)
     return text_script
 
 def remove_comments(text_script):
@@ -294,8 +297,6 @@ def read_text_script(text_script, end_commands=["end", "softend"]):
                 if len(args) == 1:
                     global using_dynamic
                     using_dynamic = True
-                    global dynamic_start_offset
-                    dynamic_start_offset = args[0]
                     dyn = (True, args[0])
                 else:
                     error = "ERROR: #dyn/#dynamic statement needs offset"
@@ -439,8 +440,6 @@ def compile_script(script_list):
         hex_scripts.append(hex_script)
     return hex_scripts, None
 
-
-dynamic_start_offset = "800000"
 
 def put_offsets_labels(hex_chunks, text_script):
     ''' Calculates the real offset for :labels and does the needed
