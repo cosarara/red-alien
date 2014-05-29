@@ -14,11 +14,19 @@ class Window(QtGui.QMainWindow):
         self.ui = Ui_MainWindow()
         self.ui.setupUi(self)
 
-        data = pkgutil.get_data('asc', os.path.join('data', 'icon.svg'))
+
+        if getattr(sys, 'frozen', False):
+            iconpath = os.path.join(
+                    os.path.dirname(sys.executable),
+                    "asc", "data", "icon.svg")
+            pixmap = QtGui.QPixmap(iconpath)
+        else:
+            icon = pkgutil.get_data('asc', os.path.join('data', 'icon.svg'))
+            pixmap = QtGui.QPixmap()
+            pixmap.loadFromData(icon)
         icon = QtGui.QIcon()
-        pixmap = QtGui.QPixmap()
-        pixmap.loadFromData(data)
-        icon.addPixmap(pixmap, QtGui.QIcon.Normal, QtGui.QIcon.Off)
+        icon.addPixmap(pixmap,
+                QtGui.QIcon.Normal, QtGui.QIcon.Off)
         self.setWindowIcon(icon)
 
         QtCore.QObject.connect(self.ui.actionOpen,
