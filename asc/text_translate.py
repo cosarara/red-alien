@@ -17,19 +17,19 @@
 #    along with ASC.  If not, see <http://www.gnu.org/licenses/>.
 
 import string
+import sys
 import os
 import pkgutil
-try:
+
+if getattr(sys, 'frozen', False):
+    tablepath = os.path.join(
+            os.path.dirname(sys.executable),
+            "asc", "data", "pktext.tbl")
+    with open(tablepath) as tblfile:
+        table_str = tblfile.read().rstrip("\n")
+else: 
     data = pkgutil.get_data('asc', os.path.join('data', 'pktext.tbl'))
     table_str = data.decode("utf8").rstrip("\n")
-except:
-    print("Warning: no table!")
-    table_str='FF=$$'
-#module_dir = os.path.dirname(os.path.abspath(__file__))
-#path = os.path.join("data", "pktext.tbl")
-#with open(path, "r", encoding="utf8") as table_file:
-#    table_str = table_file.read().rstrip("\n")
-table = table_str
 
 def read_table_encode(table_string=table_str):
     table = table_string.split("\n")
