@@ -25,7 +25,7 @@ if getattr(sys, 'frozen', False):
     tablepath = os.path.join(
             os.path.dirname(sys.executable),
             "asc", "data", "pktext.tbl")
-    with open(tablepath) as tblfile:
+    with open(tablepath, encoding="utf8") as tblfile:
         table_str = tblfile.read().rstrip("\n")
 else: 
     data = pkgutil.get_data('asc', os.path.join('data', 'pktext.tbl'))
