@@ -643,7 +643,7 @@ def decompile_text(romtext, offset, raw=False):
     start = rom_offset
     end = start + romtext[start:].find(b"\xff")
     text = romtext[start:end]
-    text_table = text_translate.table
+    text_table = text_translate.table_str
     # decoding table
     d_table = text_translate.read_table_decode(text_table)
     translated_text = text_translate.hex_to_ascii(text, d_table)
