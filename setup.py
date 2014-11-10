@@ -3,8 +3,8 @@
 import os, sys
 
 try:
-    if "--no-freeze" in sys.argv: # hack!
-        sys.argv.remove("--no-freeze")
+    if not "--freeze" in sys.argv: # hack!
+        sys.argv.remove("--freeze")
         fail()
     from cx_Freeze import setup, Executable
 except:
