@@ -386,7 +386,7 @@ def compile_script(script_list):
             args = line[1:]
             if command == '=':
                 # The text conversion table in the module
-                text_table = text_translate.table
+                text_table = text_translate.table_str
                 # encoding table
                 e_table = text_translate.read_table_encode(text_table)
                 text = args[1:]
