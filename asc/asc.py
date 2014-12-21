@@ -16,7 +16,10 @@
 #    You should have received a copy of the GNU General Public License
 #    along with Red Alien.  If not, see <http://www.gnu.org/licenses/>.
 
+''' Main compiler/decompiler module '''
+
 import sys
+import os
 import binascii
 import argparse
 import re
@@ -24,23 +27,23 @@ import ast
 from . import pokecommands as pk
 from . import text_translate
 
-max_nops=10
-using_windows = False
-using_dynamic = False
-end_commands = ["end", "jump", "return"]
-end_lalmands = 25
-end_hex_commands = [0xFF]
+MAX_NOPS = 10
+USING_WINDOWS = (os.name == 'nt')
+USING_DYNAMIC = False
+END_COMMANDS = ["end", "jump", "return"]
+END_HEX_COMMANDS = [0xFF]
 
-operators_list = ("==", "!=", "<=", ">=", "<", ">")
+OPERATORS_LIST = ("==", "!=", "<=", ">=", "<", ">")
 
-operators = {"==": "1", "!=": "5", "<": "0", ">": "2",
+OPERATORS = {"==": "1", "!=": "5", "<": "0", ">": "2",
              "<=": "3", ">=": "4"}
-contrary_operators = {"==": "!=", "!=": "==", "<": ">=", ">": "<=",
+OPPOSITE_OPERATORS = {"==": "!=", "!=": "==", "<": ">=", ">": "<=",
                       "<=": ">", ">=": "<"}
 
-quiet = False
+QUIET = False
 def debug(*args):
-    print(*args) if not quiet else None
+    if not QUIET:
+        print(*args)
 
 def preparse(text_script):
     text_script = remove_comments(text_script)
@@ -56,7 +59,7 @@ def regexps(text_script):
     # FIXME: We beak line numbers everywhere :(
     # XSE 1.1.1 like msgboxes
     text_script = re.sub(r"msgbox (.+?) (.+?)", r"msgbox \1\ncallstd \2",
-            text_script)
+                         text_script)
     # Join lines ending with \
     text_script = re.sub("\\\\\\n", r"", text_script)
     for label in re.findall(r"@\S+", text_script, re.MULTILINE):
@@ -70,12 +73,6 @@ def remove_comments(text_script):
         pattern = symbol + "(.*?)$"
         text_script = re.sub(pattern, "", text_script, flags=re.MULTILINE)
     return text_script
-
-def find_nth(t, s, n, p=-1):
-        if n == 0:
-            return p
-        p_ = t.find(s)+1
-        return find_nth(t, t[p_:], n-1, p_+p)
 
 def apply_includes(text_script):
     list_script = text_script.split("\n")
@@ -96,7 +93,7 @@ def apply_includes(text_script):
 def apply_defs(text_script):
     ''' Runs the #define substitutions '''
     list_script = text_script.split("\n")
-    for n, line in enumerate(list_script):
+    for line in list_script:
         if "'" in line:
             line = line[:line.find("'") - 1]
         words = line.split(" ")
@@ -123,6 +120,8 @@ def apply_defs(text_script):
 def advanced_preparsing(text_script, level=0):
     ''' The awesome preparsing (actually you could call it compiling)
         of cool stuctures '''
+    # FIXME: this is crap really
+
     # Okay, so this is what we want:
     # 1. ----------- while -----------
     # while (<expression>) {
@@ -147,6 +146,7 @@ def advanced_preparsing(text_script, level=0):
     def grep_part(text, start_pos, open, close):
         start_pos = start_pos + text[start_pos:].find(open) + 1
         s = -1
+        i = 0
         for i, char in enumerate(text[start_pos:]):
             if char == close:
                 s += 1
@@ -160,7 +160,7 @@ def advanced_preparsing(text_script, level=0):
         return start_pos, end_pos
 
     def grep_statement(text, name):
-        pos = re.search(name + ".?\(", text).start()
+        pos = re.search(name + r".?\(", text).start()
         condition_start, condition_end = grep_part(text, pos, "(", ")")
         condition = text[condition_start:condition_end]
         body_start, body_end = grep_part(text, pos, "{", "}")
@@ -168,16 +168,16 @@ def advanced_preparsing(text_script, level=0):
         return (pos, body_end+1, condition, body)
 
 
-    while re.search("while.?\(", text_script):
+    while re.search(r"while.?\(", text_script):
         pos, end_pos, condition, body = grep_statement(text_script, "while")
         body = advanced_preparsing(body, level+1)
         # Any operator in the condition expression
         part = ":while_start" + str(level) + '\n'
-        for operator in operators_list:
+        for operator in OPERATORS_LIST:
             if operator in condition:
                 var, constant = condition.split(operator)
                 part += "compare " + var.strip() + " " + constant.strip() + "\n"
-                part += ("if " + contrary_operators[operator] +
+                part += ("if " + OPPOSITE_OPERATORS[operator] +
                          " jump :while_end" + str(level) + '\n')
                 break
         else:
@@ -197,17 +197,17 @@ def advanced_preparsing(text_script, level=0):
         level += 1
 
     # I'll refactor this one day, I promise =P
-    while re.search("if.?\(", text_script):
+    while re.search(r"if.?\(", text_script):
         pos, end_pos, condition, body = grep_statement(text_script, "if")
         body = advanced_preparsing(body)
         have_else = re.match("\\selse\\s*?{", text_script[end_pos:])
         # Any operator in the condition expression
         part = ''
-        for operator in operators_list:
+        for operator in OPERATORS_LIST:
             if operator in condition:
                 var, constant = condition.split(operator)
                 part += "compare " + var.strip() + " " + constant.strip() + "\n"
-                part += ("if " + contrary_operators[operator] +
+                part += ("if " + OPPOSITE_OPERATORS[operator] +
                          " jump :if_end" + str(level) + '\n')
                 break
         else:
@@ -223,7 +223,7 @@ def advanced_preparsing(text_script, level=0):
         part += body + '\n'
         if have_else:
             else_body_start, else_body_end = grep_part(text_script,
-                    end_pos, "{", "}")
+                                                       end_pos, "{", "}")
             else_body = text_script[else_body_start:else_body_end]
             else_body = advanced_preparsing(else_body, level+1)
             part += "jump :else_end" + str(level) + "\n"
@@ -239,7 +239,7 @@ def advanced_preparsing(text_script, level=0):
 
     return text_script
 
-def read_text_script(text_script, end_commands=["end", "softend"]):
+def read_text_script(text_script, END_COMMANDS=["end", "softend"]):
     ''' The basic language preparsing function '''
     list_script = text_script.split("\n")
     org_i = -1
@@ -280,10 +280,9 @@ def read_text_script(text_script, end_commands=["end", "softend"]):
             error += "Context:\n"
             for line_num in range(num-3, num+6):
                 error += "    " + list_script[line_num] + "\n"
-            if (pk.pkcommands[command]['args'] and
-                pk.pkcommands[command]['args'][0]):
-                error += ("Args needed: " + pk.pkcommands[command]['args'][0]
-                          + " " + str(pk.pkcommands[command]['args'][1]))
+            args = pk.pkcommands[command]['args']
+            if args and args[0]:
+                error += "Args needed: " + args[0] + " " + str(args[1])
             return None, error, dyn
 
         else:
@@ -295,8 +294,8 @@ def read_text_script(text_script, end_commands=["end", "softend"]):
 
             elif command == "#dyn" or command == "#dynamic":
                 if len(args) == 1:
-                    global using_dynamic
-                    using_dynamic = True
+                    global USING_DYNAMIC
+                    USING_DYNAMIC = True
                     dyn = (True, args[0])
                 else:
                     error = "ERROR: #dyn/#dynamic statement needs offset"
@@ -307,7 +306,7 @@ def read_text_script(text_script, end_commands=["end", "softend"]):
                 error = ("ERROR: No #org found - " + str(num))
                 return None, error, dyn
 
-            elif command in end_commands or words == ["#raw", "0xFE"]:
+            elif command in END_COMMANDS or words == ["#raw", "0xFE"]:
                 parsed_list[org_i].append(words)
                 has_org = False
 
@@ -318,7 +317,7 @@ def read_text_script(text_script, end_commands=["end", "softend"]):
             elif command == "if":
                 if len(args) != 3:
                     error = ("ERROR: syntax error on line " + str(num + 1) +
-                           "\nArgument number wrong in 'if'")
+                             "\nArgument number wrong in 'if'")
                     return None, error, dyn
                 if args[1] == "jump":
                     branch = "jumpif"
@@ -333,8 +332,8 @@ def read_text_script(text_script, end_commands=["end", "softend"]):
                              "jumpstd or callstd.")
                     return None, error, dyn
                 operator = args[0]
-                if operator in operators:
-                    operator = operators[operator]
+                if operator in OPERATORS:
+                    operator = OPERATORS[operator]
                 words = [branch, operator, args[2]]
                 parsed_list[org_i].append(words)
 
@@ -425,7 +424,7 @@ def compile_script(script_list):
                                          arg_bytes)
                         hexargs += arg_bytes
                     else:
-                        if arg[0] == "@" and not using_dynamic:
+                        if arg[0] == "@" and not USING_DYNAMIC:
                             error = "No #dynamic statement"
                             return None, error
                         # If we still have dynamic offsets, this compilation
@@ -462,11 +461,11 @@ def put_offsets_labels(hex_chunks, text_script):
 def put_offsets(hex_chunks, text_script, file_name, dyn):
     ''' Find free space and replace #dynamic addresses with real offsets '''
     dynamic_start = int(dyn, 16)
-    alen = 0
     rom_file_r = open(file_name, "rb")
     rom_bytes = rom_file_r.read()
     rom_file_r.close()
     offsets_found_log = ''
+    last = dynamic_start
     for i, chunk in enumerate(hex_chunks):
         debug(chunk)
         offset = chunk[0]
@@ -477,19 +476,19 @@ def put_offsets(hex_chunks, text_script, file_name, dyn):
         length = len(part)
         free_space = b"\xFF" * length
         offset_with_free_space = rom_bytes.find(free_space,
-                                                dynamic_start + alen)
+                                                last)
         if offset_with_free_space == -1:
             print(len(rom_bytes))
             print(len(free_space))
             print(dynamic_start)
-            print(alen)
+            print(last)
             raise Exception("No free space to put script.")
         text_script = text_script.replace(" " + offset + " ",
-                                      " " + hex(offset_with_free_space) + " ")
+                                          " " + hex(offset_with_free_space) + " ")
         text_script = text_script.replace(" " + offset + "\n",
-                                      " " + hex(offset_with_free_space) + "\n")
+                                          " " + hex(offset_with_free_space) + "\n")
         hex_chunks[i][0] = hex(offset_with_free_space)
-        alen += length + 10
+        last = offset_with_free_space + 10
         offsets_found_log += (offset + ' - ' +
                               hex(offset_with_free_space) + '\n')
     # TODO: Comprovar si ha quedat alguna direcció (en un argument) dinàmica
@@ -515,7 +514,7 @@ def write_hex_script(hex_scripts, rom_file_name):
 
 
 def decompile(file_name, offset, type_="script", raw=False,
-        end_commands=end_commands, end_hex_commands=end_hex_commands):
+              end_commands=END_COMMANDS, end_hex_commands=END_HEX_COMMANDS):
     # Preparem ROM text
     debug("'file name = " + file_name)
     debug("'offset = " + hex(offset))
@@ -530,11 +529,11 @@ def decompile(file_name, offset, type_="script", raw=False,
         rom_offset = get_rom_offset(offset)
         type_ = offsets[0][1]
         if type_ == "script":
-            textscript_, new_offsets = decompile_script(
-                                            rombytes, offset,
-                                            offsets, end_commands=end_commands,
-                                            end_hex_commands=end_hex_commands,
-                                            raw=raw)
+            textscript_, new_offsets = decompile_script(rombytes, offset,
+                                                        offsets,
+                                                        end_commands=end_commands,
+                                                        end_hex_commands=end_hex_commands,
+                                                        raw=raw)
             textscript += ("#org " + hex(offset) + "\n" +
                            textscript_ + "\n")
             for new_offset in new_offsets:
@@ -564,8 +563,8 @@ def get_rom_offset(offset):
     return rom_offset
 
 def decompile_script(rombytes, offset, added_offsets,
-                     end_commands=["end", "jump", "return"],
-                     end_hex_commands=[0xFF], raw=False):
+                     end_commands=END_COMMANDS,
+                     end_hex_commands=END_HEX_COMMANDS, raw=False):
     rom_offset = get_rom_offset(offset)
     offsets = []
     hexscript = rombytes
@@ -575,8 +574,8 @@ def decompile_script(rombytes, offset, added_offsets,
     hex_command = 0
     hex_command = hexscript[i]
     nop_count = 0 # Stop on 10 nops for safety
-    while (text_command not in end_commands and
-           hex_command not in end_hex_commands):
+    while (text_command not in END_COMMANDS and
+           hex_command not in END_HEX_COMMANDS):
         hex_command = hexscript[i]
         if hex_command in pk.dec_pkcommands and not raw:
             text_command = pk.dec_pkcommands[hex_command]
@@ -609,7 +608,7 @@ def decompile_script(rombytes, offset, added_offsets,
             i += 1
         if hex_command == 0:
             nop_count += 1
-            if nop_count >= max_nops and max_nops != 0:
+            if nop_count >= MAX_NOPS and MAX_NOPS != 0:
                 textscript += " ' Too many nops. Stopping"
                 break
         else:
@@ -618,7 +617,7 @@ def decompile_script(rombytes, offset, added_offsets,
     return textscript, offsets
 
 
-def decompile_movs(romtext, offset, end_hex_commands=[0xFE, 0xFF], raw=False):
+def decompile_movs(romtext, offset, END_HEX_COMMANDS=[0xFE, 0xFF], raw=False):
     rom_offset = get_rom_offset(offset)
     debug(offset)
     hexscript = romtext
@@ -626,7 +625,7 @@ def decompile_movs(romtext, offset, end_hex_commands=[0xFE, 0xFF], raw=False):
     textscript = ""
     text_command = ""
     hex_command = ""
-    while (hex_command not in end_hex_commands):
+    while hex_command not in END_HEX_COMMANDS:
         try:
             hex_command = hexscript[i]
         except IndexError:
@@ -651,7 +650,7 @@ def decompile_text(romtext, offset, raw=False):
 
 
 def write_text_script(text, file_name):
-    if using_windows:
+    if USING_WINDOWS:
         text = text.replace("\n", "\r\n")
     with open(file_name, "w") as script_file:
         script_file.write(text)
@@ -709,7 +708,7 @@ def compile_without_writing(script, rom_file_name):
         parsed_script, error, dyn = read_text_script(script)
         hex_script, error = compile_script(parsed_script)
 
-    # Remove the labels list, which will be empty and useless now 
+    # Remove the labels list, which will be empty and useless now
     for chunk in hex_script:
         del chunk[2] # Will always be []
     return hex_script, log
@@ -731,8 +730,8 @@ def nice_dbg_output(hex_scripts):
 
 
 def main():
-    parser = argparse.ArgumentParser(description='Red Alien, an Advanced (Pokémon) Script'
-            ' Compiler')
+    description = 'Red Alien, an Advanced (Pokémon) Script Compiler'
+    parser = argparse.ArgumentParser(description=description)
 
     parser.add_argument('--quiet', action='store_true', help='Be quiet')
     subparsers = parser.add_subparsers(help='available commands:')
@@ -751,20 +750,20 @@ def main():
     parser_d.add_argument('rom', help='path to ROM image')
     parser_d.add_argument('offset', help='where to decompile')
     parser_d.add_argument('--raw', action='store_true',
-            help='Be dumb (display everything as raw bytes)')
-    parser_d.add_argument('--max-nops', default=10, type=int,
-            help=('How many nop bytes until it stops (0 to never stop). '
-                'Defaults to 10'))
-    global end_commands
-    for end_command in end_commands:
+                          help='Be dumb (display everything as raw bytes)')
+    h = 'How many nop bytes until it stops (0 to never stop). Defaults to 10'
+    parser_d.add_argument('--max-nops', default=10, type=int, help=h)
+
+    global END_COMMANDS
+    for end_command in END_COMMANDS:
         msg = ('whether or not to stop decompiling when a ' + end_command +
                ' is found')
         parser_d.add_argument('--continue-on-' + end_command,
-                action='append_const', dest='end_commands_to_delete',
-                const=end_command, help=msg)
-    parser_d.add_argument('--continue-on-0xFF',
-            action='store_true', help=('whether or not to stop decompiling'
-                ' when a 0xFF byte is found'))
+                              action='append_const',
+                              dest='END_COMMANDS_to_delete',
+                              const=end_command, help=msg)
+    h = 'whether or not to stop decompiling when a 0xFF byte is found'
+    parser_d.add_argument('--continue-on-0xFF', action='store_true', help=h)
     parser_d.set_defaults(command='d')
 
     args = parser.parse_args()
@@ -772,9 +771,9 @@ def main():
         parser.print_help()
         exit(1)
 
-    global quiet, max_nops
-    quiet = args.quiet
-    max_nops = (args.max_nops if max_nops in args else 10)
+    global QUIET, MAX_NOPS
+    QUIET = args.quiet
+    MAX_NOPS = (args.MAX_NOPS if MAX_NOPS in args else 10)
 
     if args.command == "c":
         script = open_script(args.script)
@@ -794,18 +793,15 @@ def main():
         print(log)
 
     elif args.command == "d":
-        if not args.end_commands_to_delete:
-            args.end_commands_to_delete = []
-        for end_command in args.end_commands_to_delete:
-            end_commands.remove(end_command)
-        print("'" + '-'*20 + '\n' +
-              decompile(args.rom, int(args.offset, 16),
-                        end_commands=end_commands, raw=args.raw,
-                        end_hex_commands=(
-                            [] if args.continue_on_0xFF else end_hex_commands
-                            )
-                        )
-              )
+        if not args.END_COMMANDS_to_delete:
+            args.END_COMMANDS_to_delete = []
+        for end_command in args.END_COMMANDS_to_delete:
+            END_COMMANDS.remove(end_command)
+        print("'" + '-'*20)
+        end_hex_commands = [] if args.continue_on_0xFF else END_HEX_COMMANDS
+        print(decompile(args.rom, int(args.offset, 16),
+                        end_commands=END_COMMANDS, raw=args.raw,
+                        end_hex_commands=end_hex_commands))
 
 
 
