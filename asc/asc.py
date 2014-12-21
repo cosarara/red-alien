@@ -769,7 +769,8 @@ def main():
 
     args = parser.parse_args()
     if not "command" in args:
-        raise Exception("Error. Run with --help for more info.")
+        parser.print_help()
+        exit(1)
 
     global quiet, max_nops
     quiet = args.quiet
