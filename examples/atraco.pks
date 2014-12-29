@@ -170,17 +170,17 @@ end
 #raw 0x03 ' Face Right
 #raw 0xFE 'End
 
-#org @jump_in_place_left
+#org @mov_jump_in_place_left
 #raw 0x02 ' Face Left
 #raw 0x54 ' Jump in Place (Facing Left)
 #raw 0xFE 'End
 
-#org @jump_in_place_right
+#org @mov_jump_in_place_right
 #raw 0x03 ' Face Right
 #raw 0x55 ' Jump in Place (Facing Right)
 #raw 0xFE 'End
 
-#org @jump_in_place_down
+#org @mov_jump_in_place_down
 #raw 0x00 ' Face Down
 #raw 0x52 ' Jump in Place (Facing Down)
 #raw 0xFE 'End
