@@ -53,19 +53,15 @@ def ascii_to_hex(astring, dictionary=read_table_encode(table_str)):
     trans_string = b''
     i = 0
     while i < len(astring):
-    #for i in range(len(string)):
         character = astring[i]
         if character == "\\" and astring[i + 1] == "h":
-            print("case1")
             if (astring[i + 2] in string.hexdigits and
                 astring[i + 3] in string.hexdigits):
                 trans_string += bytes((int(astring[i+2:i+4], 16),))
                 i += 3
         elif character in dictionary:
-            #print("case normal")
             trans_string += bytes((dictionary[character],))
         elif astring[i:i + 2] in dictionary:
-            #print("case3")
             trans_string += bytes((dictionary[astring[i:i + 2]],))
             i += 1
         else:  # (not tested)
