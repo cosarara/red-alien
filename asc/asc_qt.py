@@ -2,6 +2,7 @@
  
 import sys
 from PyQt4 import Qt, QtCore, QtGui
+from PyQt4 import Qsci
 import argparse
 import pkgutil
 import os
@@ -13,7 +14,6 @@ class Window(QtGui.QMainWindow):
         QtGui.QWidget.__init__(self, parent)
         self.ui = Ui_MainWindow()
         self.ui.setupUi(self)
-
 
         if getattr(sys, 'frozen', False):
             iconpath = os.path.join(
@@ -46,7 +46,7 @@ class Window(QtGui.QMainWindow):
                                self.load_rom)
         QtCore.QObject.connect(self.ui.actionQuit,
                                QtCore.SIGNAL("triggered()"),
-                               sys.exit)
+                               self.close)
         QtCore.QObject.connect(self.ui.actionDecompile,
                                QtCore.SIGNAL("triggered()"),
                                self.decompile)
@@ -87,9 +87,12 @@ class Window(QtGui.QMainWindow):
         # QScintilla
         self.ui.textEdit.setMarginLineNumbers(1, True)
         self.ui.textEdit.setMarginWidth(1, 30)
-
-        #print(dir(self.ui))
-        #QtCore.QObject.connect(self.ui.lineEdit, QtCore.SIGNAL("returnPressed()"), self.add_entry)
+        self.font = QtGui.QFont("mono", 10)
+        self.ui.textEdit.setFont(self.font)
+        lexer = Qsci.QsciLexerCPP()
+        lexer.setDefaultFont(self.font)
+        self.ui.textEdit.setLexer(lexer)
+        
 
     def load_file(self):
         fn = QtGui.QFileDialog.getOpenFileName(self, 'Open file', 
@@ -166,6 +169,9 @@ class Window(QtGui.QMainWindow):
                     return
         self.ui.textEdit.setText(asc.decompile(self.rom_file_name, offset))
 
+    def error_message(self, msg):
+        QtGui.QMessageBox.critical(self, "Error", msg)
+
     def compile(self, mode): # In "compile" mode, writes changes to ROM
                              # In "debug" it doesn't
         if not self.rom_file_name:
@@ -175,52 +181,32 @@ class Window(QtGui.QMainWindow):
         #    self.rom_contents = f.read()
         script = str(self.ui.textEdit.text())
         script = script.replace("\r\n", "\n")
-        script = asc.preparse(script)
-        parsed_script, error, dyn = asc.read_text_script(script)
+        script = asc.dirty_compile(script)
+        parsed_script, error, dyn = asc.asm_parse(script)
         if error:
-            QtGui.QMessageBox.critical(self, "Error", error)
+            self.error_message(error)
             return
-        hex_script, error = asc.compile_script(parsed_script)
+        hex_script, error = asc.make_bytecode(parsed_script)
         if error:
-            QtGui.QMessageBox.critical(self, "Error", error)
+            self.error_message(error)
             return
         log = ''
         if dyn[0]: # If there are dynamic addresses, we have to replace
                    # them with real adresses and recompile
-            #print "going dynamic!"
-            script, error, log = asc.put_offsets(hex_script, script,
-                                                 self.rom_file_name, dyn[1])
-            script = asc.put_offsets_labels(hex_script, script)
-            #print script
-            #print "re-preparsing"
-            parsed_script, error, dyn = asc.read_text_script(script)
-            if error:
-                self.error_message(error)
-                return
-            #print "recompiling"
-            hex_script, error = asc.compile_script(parsed_script)
-            # Remove the labels list, which will be empty and useless now 
-            for chunk in hex_script:
-                del chunk[2] # Will always be []
-            if error:
-                QtGui.QMessageBox.critical(self, "Error", error)
-                self.error_message(error)
-                return
-            #print "yay!"
-        else:
-            script = asc.put_offsets_labels(hex_script, script)
-            parsed_script, error, dyn = asc.read_text_script(script)
-            if error:
-                self.error_message(error)
-                return
-            hex_script, error = asc.compile_script(parsed_script)
-            # Remove the labels list, which will be empty and useless now 
-            for chunk in hex_script:
-                del chunk[2] # Will always be []
-            if error:
-                QtGui.QMessageBox.critical(self, "Error", error)
-                self.error_message(error)
-                return
+            script, error, log = asc.put_addresses(hex_script, script,
+                                                   self.rom_file_name, dyn[1])
+        script = asc.put_addresses_labels(hex_script, script)
+        parsed_script, error, dyn = asc.asm_parse(script)
+        if error:
+            self.error_message(error)
+            return
+        hex_script, error = asc.make_bytecode(parsed_script)
+        if error:
+            self.error_message(error)
+            return
+
+        for chunk in hex_script:
+            del chunk[2] # Will always be []
 
         if mode == "compile":
             asc.write_hex_script(hex_script, self.rom_file_name)
@@ -229,10 +215,11 @@ class Window(QtGui.QMainWindow):
                                           "successfully")
         else:
             # TODO: A custom message window with monospace font and scroll
-            QtGui.QMessageBox.information(self, "Script in hex",
-                        asc.nice_dbg_output(hex_script))
+            hexpopup = LogPopup(self, asc.nice_dbg_output(hex_script))
+            #QtGui.QMessageBox.information(self, "Script in hex",
+            #            asc.nice_dbg_output(hex_script))
         if log:
-            QtGui.QMessageBox.information(self, "log", log)
+            logpopup = LogPopup(self, log)
 
     def help_about(self):
         QtGui.QMessageBox.about(self, "About Red Alien", ("Red Alien,"
@@ -242,7 +229,6 @@ class Window(QtGui.QMainWindow):
 
     def find(self):
         startline, starti = self.ui.textEdit.getCursorPosition()
-        print(startline, starti)
         s, ok = QtGui.QInputDialog.getText(self, 'Find', 'Text to find:')
         if not ok or not s:
             return
@@ -269,6 +255,26 @@ class Window(QtGui.QMainWindow):
             QtGui.QMessageBox.critical(self, "Error", "Text not found")
             return
         self.ui.textEdit.setCursorPosition(line_n, i+len(s))
+
+class LogPopup(QtGui.QDialog):
+    def __init__(self, parent=None, text=""):
+        QtGui.QDialog.__init__(self, parent)
+
+        self.resize(400, 300)
+
+        vbox = QtGui.QVBoxLayout()
+        self.textedit = QtGui.QTextEdit()
+        self.textedit.setReadOnly(True)
+        self.textedit.setFont(QtGui.QFont("mono", 10))
+        self.textedit.setText(text)
+        quit_button = QtGui.QPushButton("OK")
+        quit_button.clicked.connect(self.close)
+        vbox.addWidget(self.textedit)
+        vbox.addWidget(quit_button)
+
+        self.setLayout(vbox)
+        self.show()
+
 
 def main():
     parser = argparse.ArgumentParser(description='Red Alien, the Advanced Pokémon Script Compiler')
