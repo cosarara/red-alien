@@ -86,6 +86,8 @@ def regexps(text_script):
     # XSE 1.1.1 like msgboxes
     text_script = re.sub(r"msgbox (.+?) (.+?)", r"msgbox \1\ncallstd \2",
                          text_script)
+    text_script = text_script.replace("goto", "jump")
+
     # Join lines ending with \
     text_script = re.sub("\\\\\\n", r"", text_script)
     for label in re.findall(r"@\S+", text_script, re.MULTILINE):
@@ -123,20 +125,16 @@ def apply_defs(text_script):
         if "'" in line:
             line = line[:line.find("'") - 1]
         words = line.split(" ")
-        if len(words) == 3:
+        if len(words) >= 3:
             command = words[0]
             name = words[1]
-            value = words[2]
+            value = ' '.join(words[2:])
             if command == "#define":
                 # Because CAMERA mustn't conflict with CAMERA_START
-                text_script = text_script.replace(" " + name + " ",
-                                                  " " + value + " ")
-                text_script = text_script.replace("(" + name + " ",
-                                                  "(" + value + " ")
-                text_script = text_script.replace(" " + name + ")",
-                                                  " " + value + ")")
-                text_script = text_script.replace(" " + name + "\n",
-                                                  " " + value + "\n")
+                for i, j in ((" ", " "), ("(", " "), (" ", ")"), (" ", "\n"),
+                          ("\n", "\n")):
+                    text_script = text_script.replace(i + name + j, i + value + j)
+
                 if name[0] == '[' and name[-1] == ']':
                     text_script = text_script.replace(name, value)
     text_script = text_script.replace("#define", "'#define")
