@@ -276,7 +276,7 @@ pkcommands = {
     "storeitems": {"hex": 0xd4, "args": ("?, id, amt", (1, 2, 2))},
     #"fb": {"hex": 0xfb, "args": ("addr", (4))},
     #"fe": {"hex": 0xfe, "args": ("?", (1,))},
-    "singlemovement": {"hex": 0xD5, "args": ("person, mov", (1, 1))}
+    "singlemovement": {"hex": 0xD5, "args": ("person, mov", (2, 2))}
 
     }
 
