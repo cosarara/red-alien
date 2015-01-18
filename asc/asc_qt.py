@@ -77,8 +77,9 @@ class Window(QtGui.QMainWindow):
         QtCore.QObject.connect(self.ui.actionFind,
                                QtCore.SIGNAL("triggered()"),
                                self.find)
-        QtGui.QShortcut(QtGui.QKeySequence("Ctrl+F"), self.ui.textEdit,
-                self.find, context=QtCore.Qt.WidgetShortcut)
+        QtCore.QObject.connect(self.ui.actionInsert_String,
+                               QtCore.SIGNAL("triggered()"),
+                               self.insert_string)
         QtCore.QObject.connect(self.ui.actionAbout,
                                QtCore.SIGNAL("triggered()"),
                                self.help_about)
@@ -92,10 +93,15 @@ class Window(QtGui.QMainWindow):
         lexer = Qsci.QsciLexerCPP()
         lexer.setDefaultFont(self.font)
         self.ui.textEdit.setLexer(lexer)
-        
 
     def load_file(self):
-        fn = QtGui.QFileDialog.getOpenFileName(self, 'Open file', 
+        reply = QtGui.QMessageBox.question(self, 'Are you sure?',
+                "Do you want to save this first?",
+                QtGui.QMessageBox.Yes, QtGui.QMessageBox.No)
+        if reply == QtGui.QMessageBox.Yes:
+            return self.save_file()
+
+        fn = QtGui.QFileDialog.getOpenFileName(self, 'Open file',
                                                QtCore.QDir.homePath(),
                                                "Pokemon script (*.pks);;"
                                                "All files (*)")
@@ -103,13 +109,18 @@ class Window(QtGui.QMainWindow):
             return
         self.file_name = fn
 
-        with open(fn, 'r') as f:        
+        with open(fn, 'r') as f:
             text = f.read()
             self.ui.textEdit.setText(text)
         self.ui.statusbar.showMessage("loaded " + fn)
 
     def new_file(self):
-        #TODO: Unsaved changes!
+        reply = QtGui.QMessageBox.question(self, 'Are you sure?',
+                "Do you want to save this first?",
+                QtGui.QMessageBox.Yes, QtGui.QMessageBox.No)
+        if reply == QtGui.QMessageBox.Yes:
+            return self.save_file()
+
         self.file_name = ''
         self.ui.textEdit.clear()
         self.ui.statusbar.showMessage("")
@@ -132,7 +143,7 @@ class Window(QtGui.QMainWindow):
         self.ui.statusbar.showMessage("file saved as " + fn)
 
     def load_rom(self):
-        fn = QtGui.QFileDialog.getOpenFileName(self, 'Open ROM file', 
+        fn = QtGui.QFileDialog.getOpenFileName(self, 'Open ROM file',
                                                QtCore.QDir.homePath(),
                                                "GBA ROM (*.gba);;"
                                                "All files (*)")
@@ -147,11 +158,18 @@ class Window(QtGui.QMainWindow):
         self.compile("debug")
 
     def decompile(self, offset=None):
+        reply = QtGui.QMessageBox.question(self, 'Are you sure?',
+                "Do you want to save this first?",
+                QtGui.QMessageBox.Yes, QtGui.QMessageBox.No)
+        if reply == QtGui.QMessageBox.Yes:
+            return self.save_file()
+
         if not self.rom_file_name:
             QtGui.QMessageBox.critical(self, "Error", "No ROM loaded")
             return
+
         if not offset:
-            text, ok = QtGui.QInputDialog.getText(self, 'Decompile', 
+            text, ok = QtGui.QInputDialog.getText(self, 'Decompile',
                                                   'Enter offset (prefix with 0x for hex):')
             if not ok or not text:
                 return
@@ -256,6 +274,16 @@ class Window(QtGui.QMainWindow):
             return
         self.ui.textEdit.setCursorPosition(line_n, i+len(s))
 
+    def insert_string(self):
+        popup = InsertTextBoxPopup(self)
+        popup.exec_()
+        line, pos = self.ui.textEdit.getCursorPosition()
+        text = self.ui.textEdit.text()
+        i = asc.find_nth(text, "\n", line)
+        to_insert = "".join(["= " + l + "\n" for l in popup.text.split("\n")])
+        self.ui.textEdit.setText(text[:i] + to_insert + text[i:])
+        print(popup.text)
+
 class LogPopup(QtGui.QDialog):
     def __init__(self, parent=None, text=""):
         QtGui.QDialog.__init__(self, parent)
@@ -274,6 +302,46 @@ class LogPopup(QtGui.QDialog):
 
         self.setLayout(vbox)
         self.show()
+
+class InsertTextBoxPopup(QtGui.QDialog):
+    def __init__(self, parent=None, text=""):
+        QtGui.QDialog.__init__(self, parent)
+
+        self.resize(400, 300)
+
+        vbox = QtGui.QVBoxLayout()
+        self.textedit = Qsci.QsciScintilla(None)
+        self.textedit.setFont(QtGui.QFont("mono", 10))
+        self.textedit.setEdgeMode(Qsci.QsciScintilla.EdgeLine)
+        self.textedit.setEdgeColumn(35)
+        self.textedit.setEdgeColor(QtGui.QColor("#FF0000"))
+        self.textedit.setText(text)
+        self.textedit.cursorPositionChanged.connect(self.curPosChanged)
+
+        quit_button = QtGui.QPushButton("OK")
+        quit_button.clicked.connect(self.ok)
+
+        self.label = QtGui.QLabel()
+
+        vbox.addWidget(self.textedit)
+        vbox.addWidget(quit_button)
+        vbox.addWidget(self.label)
+
+        self.setLayout(vbox)
+        self.text = ""
+
+    def curPosChanged(self, l, i):
+        text = self.textedit.text()
+        line = text.split("\n")[l]
+        out = str(asc.text_len(line)) + "/" + str(35*6) + " px"
+        self.label.setText(out)
+        return
+
+    def ok(self):
+        self.hide()
+        self.close()
+        self.text = self.textedit.text()
+        return
 
 
 def main():

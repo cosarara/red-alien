@@ -383,7 +383,43 @@ def asm_parse(text_script, END_COMMANDS=["end", "softend"]):
                     return None, error, dyn
     return parsed_list, None, dyn
 
+def text_len(text):
+    #"0-9": "6",
+    #"..": "6",
+    #"A-Z": "6",
+    #"a-h": "6",
+    #"s-z": "6",
+    #"m-q": "6",
+    #"€": "6",
+    #'"': "6 (both)",
+    #"k": "6",
+    #"/": "6",
+    #"male": "6",
+    #"female": "6",
+    kernings = {
+            "!": 3,
+            "?": 6,
+            ".": 3,
+            ":": 5,
+            "·": 3,
+            "'": 3,
+            ",": 3,
+            "i": 4,
+            "j": 5,
+            "l": 3,
+            "r": 5,
+            ":": 3,
+            "↑": 7,
+            "→": 7,
+            "↓": 7,
+            "←": 7,
+            "+": 7,
+            " ": 3,
+            }
+    return sum([kernings[c] if c in kernings else 6 for c in text])
+
 def autocut_text(text):
+    maxlen = 35 * 6
     words = text.split(" ")
     text = ''
     line = ''
@@ -391,14 +427,26 @@ def autocut_text(text):
     delims = ('\\n', '\\p')
     delim = 0
     while i < len(words):
-        while i < len(words) and len(line+words[i]) < 35:
+        word = words[i]
+        if textlen(word) > maxlen:
             line += words[i] + " "
+            i += 1
+        while i < len(words) and text_len(line+words[i]) < maxlen:
+            word = words[i]
+            line += word + " "
             i += 1
         text += line.rstrip(" ") + delims[delim]
         delim = not delim
         line = ''
     text = text.rstrip('\\p').rstrip('\\n').rstrip(" ")
     return text
+
+def find_nth(text, string, n):
+    start = text.find(string)
+    while start >= 0 and n > 1:
+        start = text.find(string, start+len(string))
+        n -= 1
+    return start
 
 def make_bytecode(script_list):
     ''' Compile parsed script list '''

@@ -67,6 +67,8 @@
     <addaction name="actionRedo"/>
     <addaction name="separator"/>
     <addaction name="actionFind"/>
+    <addaction name="separator"/>
+    <addaction name="actionInsert_String"/>
    </widget>
    <widget class="QMenu" name="menuROM">
     <property name="title">
@@ -171,6 +173,23 @@
   <action name="actionFind">
    <property name="text">
     <string>Find</string>
+   </property>
+   <property name="shortcut">
+    <string>Ctrl+F</string>
+   </property>
+   <property name="shortcutContext">
+    <enum>Qt::ApplicationShortcut</enum>
+   </property>
+  </action>
+  <action name="actionInsert_String">
+   <property name="text">
+    <string>Insert String</string>
+   </property>
+   <property name="shortcut">
+    <string>Ctrl+B</string>
+   </property>
+   <property name="shortcutContext">
+    <enum>Qt::ApplicationShortcut</enum>
    </property>
   </action>
  </widget>

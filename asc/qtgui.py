@@ -2,8 +2,8 @@
 
 # Form implementation generated from reading ui file 'asc.ui'
 #
-# Created: Mon Jan 13 18:23:17 2014
-#      by: PyQt4 UI code generator 4.10.3
+# Created: Sun Jan 18 18:12:10 2015
+#      by: PyQt4 UI code generator 4.11.3
 #
 # WARNING! All changes made in this file will be lost!
 
@@ -88,7 +88,11 @@ class Ui_MainWindow(object):
         self.actionAbout = QtGui.QAction(MainWindow)
         self.actionAbout.setObjectName(_fromUtf8("actionAbout"))
         self.actionFind = QtGui.QAction(MainWindow)
+        self.actionFind.setShortcutContext(QtCore.Qt.ApplicationShortcut)
         self.actionFind.setObjectName(_fromUtf8("actionFind"))
+        self.actionInsert_String = QtGui.QAction(MainWindow)
+        self.actionInsert_String.setShortcutContext(QtCore.Qt.ApplicationShortcut)
+        self.actionInsert_String.setObjectName(_fromUtf8("actionInsert_String"))
         self.menuFile.addAction(self.actionNew)
         self.menuFile.addAction(self.actionOpen)
         self.menuFile.addSeparator()
@@ -107,6 +111,8 @@ class Ui_MainWindow(object):
         self.menuEdit.addAction(self.actionRedo)
         self.menuEdit.addSeparator()
         self.menuEdit.addAction(self.actionFind)
+        self.menuEdit.addSeparator()
+        self.menuEdit.addAction(self.actionInsert_String)
         self.menuROM.addAction(self.actionDecompile)
         self.menuROM.addAction(self.actionCompile)
         self.menuROM.addAction(self.actionDebug)
@@ -142,5 +148,8 @@ class Ui_MainWindow(object):
         self.actionDebug.setText(_translate("MainWindow", "Debug", None))
         self.actionAbout.setText(_translate("MainWindow", "About", None))
         self.actionFind.setText(_translate("MainWindow", "Find", None))
+        self.actionFind.setShortcut(_translate("MainWindow", "Ctrl+F", None))
+        self.actionInsert_String.setText(_translate("MainWindow", "Insert String", None))
+        self.actionInsert_String.setShortcut(_translate("MainWindow", "Ctrl+B", None))
 
 from PyQt4 import Qsci
