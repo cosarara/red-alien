@@ -276,6 +276,7 @@ pkcommands = {
     "storeitems": {"hex": 0xd4, "args": ("?, id, amt", (1, 2, 2))},
     #"fb": {"hex": 0xfb, "args": ("addr", (4))},
     #"fe": {"hex": 0xfe, "args": ("?", (1,))},
+    "singlemovement": {"hex": 0xD5, "args": ("person, mov", (1, 1))}
 
     }
 
@@ -318,5 +319,6 @@ for command in pkcommands:
         dec_pkcommands[pkcommands[command]["hex"]] = command
 
 #print dec_pkcommands
+
 
 pkcommands = pkcommands_and_aliases
