@@ -38,7 +38,7 @@ pkcommands = {
     "#dyn": {"args": ("offset", (4,))},
     "#raw": {"args": ("hex byte", (1,))},
     "if": {"args": ("comp, command, offset", (1, 1, 4))},
-    "softend": {}, # An end with doesn't compile to end
+    "softend": {}, # A likely useless end which doesn't compile to end
     # "Real" commands
     "nop0": {"hex": 0x00},
     "nop1": {"hex": 0x01},
@@ -59,7 +59,7 @@ pkcommands = {
     "jumpram": {"hex": 0x0C},
     "killscript": {"hex": 0x0E},
     "setbyte": {"hex": 0x0D, "args": ("byte", (1,))},
-    "msgbox": {"hex": 0x0F, "args": ("offset", (4,), b"\x00"),
+    "loadpointer": {"hex": 0x0F, "args": ("offset", (4,), b"\x00"),
                "offset": (0, "text")},
     "setbyte2": {"hex": 0x10, "args": ("bank, byte", (1, 1))},
     "writebytetooffset": {"hex": 0x11, "args": ("byte, adress", (1, 4))},
@@ -287,6 +287,7 @@ aliases = {"waitmovement": "pauseevent",
            "#dynamic": "#dyn",
            "goto": "jump",
            "closeonkeypress": "closemsg",
+           "msgbox": "loadpointer",
            "nop": "nop0"}
 
 pkcommands_and_aliases = pkcommands.copy()
