@@ -120,7 +120,7 @@ def apply_includes(text_script, paths):
                     fname = os.path.join(d, name)
                     if os.path.isfile(fname):
                         with open(fname) as f:
-                            t = f.read()
+                            t = apply_includes(f.read(), paths)
                         break
                 if t is None:
                     raise FileNotFoundError("#include'd file {} not found".format(name))
