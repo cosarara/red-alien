@@ -15,7 +15,7 @@ except:
         def __init__(self, a, base):
             pass
 
-data_files_cxfreeze = ['asc/data/', 'README', 'imageformats']
+data_files_cxfreeze = ['asc/data/', 'README', 'imageformats', 'stdlib']
 build_exe_options = {"packages": ["os", "PyQt4.QtSvg", "pkg_resources"],
                      "include_files": data_files_cxfreeze,
                      "includes": "PyQt4.QtCore",
