@@ -115,13 +115,15 @@ def apply_includes(text_script, paths):
             name = words[1]
             if command == "#include":
                 name = ast.literal_eval(name)
-                t = ""
+                t = None
                 for d in paths:
                     fname = os.path.join(d, name)
                     if os.path.isfile(fname):
                         with open(fname) as f:
                             t = f.read()
                         break
+                if t is None:
+                    raise FileNotFoundError("#include'd file {} not found".format(name))
                 text_script = text_script + t
     return text_script
 

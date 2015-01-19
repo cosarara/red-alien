@@ -27,7 +27,7 @@ if getattr(sys, 'frozen', False):
             "asc", "data", "pktext.tbl")
     with open(tablepath, encoding="utf8") as tblfile:
         table_str = tblfile.read().rstrip("\n")
-else: 
+else:
     data = pkgutil.get_data('asc', os.path.join('data', 'pktext.tbl'))
     table_str = data.decode("utf8").rstrip("\n")
 

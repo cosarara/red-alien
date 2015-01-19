@@ -17,3 +17,5 @@ autocmd BufRead,BufNewFile *.pks set filetype=pks
 
 Most of the command's information was taken from PKSV's pokedef.h (Thanks!)
 
+The headers in stdlib/ are taken from XSE.
+
