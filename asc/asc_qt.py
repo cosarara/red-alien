@@ -1,5 +1,5 @@
 #!/usr/bin/python3
- 
+
 import sys
 from PyQt4 import Qt, QtCore, QtGui
 from PyQt4 import Qsci
@@ -199,7 +199,9 @@ class Window(QtGui.QMainWindow):
         #    self.rom_contents = f.read()
         script = str(self.ui.textEdit.text())
         script = script.replace("\r\n", "\n")
-        script = asc.dirty_compile(script)
+        include_path = (".", os.path.dirname(self.rom_file_name),
+                os.path.dirname(self.file_name), asc.get_program_dir())
+        script = asc.dirty_compile(script, include_path)
         parsed_script, error, dyn = asc.asm_parse(script)
         if error:
             self.error_message(error)

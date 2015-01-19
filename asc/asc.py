@@ -71,10 +71,10 @@ def phdebug(bytes):
     if not QUIET:
         hprint(bytes)
 
-def dirty_compile(text_script):
+def dirty_compile(text_script, include_path):
     text_script = remove_comments(text_script)
     text_script = re.sub("^[ \t]*", "", text_script, flags=re.MULTILINE)
-    text_script = apply_includes(text_script)
+    text_script = apply_includes(text_script, include_path)
     text_script = apply_defs(text_script)
     text_script = regexps(text_script)
     text_script = compile_clike_blocks(text_script)
@@ -104,7 +104,7 @@ def remove_comments(text):
                         for s in text.split("\n")])
     return text
 
-def apply_includes(text_script):
+def apply_includes(text_script, paths):
     list_script = text_script.split("\n")
     for n, line in enumerate(list_script):
         if "'" in line:
@@ -115,9 +115,14 @@ def apply_includes(text_script):
             name = words[1]
             if command == "#include":
                 name = ast.literal_eval(name)
-                with open(name) as f:
-                    t = f.read()
-                text_script = t + text_script
+                t = ""
+                for d in paths:
+                    fname = os.path.join(d, name)
+                    if os.path.isfile(fname):
+                        with open(fname) as f:
+                            t = f.read()
+                        break
+                text_script = text_script + t
     return text_script
 
 def apply_defs(text_script):
@@ -430,7 +435,7 @@ def autocut_text(text):
     delim = 0
     while i < len(words):
         word = words[i]
-        if textlen(word) > maxlen:
+        if text_len(word) > maxlen:
             line += words[i] + " "
             i += 1
         while i < len(words) and text_len(line+words[i]) < maxlen:
@@ -771,7 +776,7 @@ def assemble(script, rom_file_name):
                                          rom_file_name, dyn[1])
         vdebug(script)
 
-    # Now with :labels we have to recompile even if 
+    # Now with :labels we have to recompile even if
 
     debug("re-preparsing")
 
@@ -807,6 +812,11 @@ def nice_dbg_output(hex_scripts):
         text += script_text
     return text
 
+def get_program_dir():
+    try:
+        return os.path.dirname(__file__)
+    except NameError:
+        return os.path.dirname(sys.executable)
 
 def main():
     description = 'Red Alien, an Advanced (Pokémon) Script Compiler'
@@ -855,7 +865,7 @@ def main():
     args = parser.parse_args()
     if not "command" in args:
         parser.print_help()
-        exit(1)
+        sys.exit(1)
 
     global QUIET, MAX_NOPS, VERBOSE
     QUIET = args.quiet
@@ -867,7 +877,9 @@ def main():
         script = open_script(args.script)
         vdebug(script)
         debug("compiling high-level stuff...")
-        script = dirty_compile(script)
+        include_path = (".", os.path.dirname(args.rom),
+                        os.path.dirname(args.script), get_program_dir())
+        script = dirty_compile(script, include_path)
         vdebug(script)
         if args.command == "b" and args.compile_only:
             print(script)
