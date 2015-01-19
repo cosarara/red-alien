@@ -95,12 +95,14 @@ def regexps(text_script):
             raise Exception("ERROR: Unmatched @ label %s" % label)
     return text_script
 
-def remove_comments(text_script):
+def remove_comments(text):
     comment_symbols = ['//', "'"]
-    for symbol in comment_symbols:
-        pattern = symbol + "(.*?)$"
-        text_script = re.sub(pattern, "", text_script, flags=re.MULTILINE)
-    return text_script
+    pattern = "(//)|'(.*?)$"
+    replace = lambda s : re.sub(pattern, "", s, flags=re.MULTILINE)
+    # remove comments only in nontext lines
+    text = "\n".join([replace(s) if (len(s) > 1 and s[0] != "=") else s
+                        for s in text.split("\n")])
+    return text
 
 def apply_includes(text_script):
     list_script = text_script.split("\n")
