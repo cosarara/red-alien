@@ -285,4 +285,6 @@ aliases = {"waitmovement": "pauseevent",
            "goto": "jump",
            "closeonkeypress": "closemsg",
            "msgbox": "loadpointer",
+           "hidesprite": "disappear",
+           "showsprite": "reappear",
            "nop": "nop0"}
