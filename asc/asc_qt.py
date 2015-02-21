@@ -94,6 +94,8 @@ class Window(QtGui.QMainWindow):
         lexer.setDefaultFont(self.font)
         self.ui.textEdit.setLexer(lexer)
 
+        self.ui.textEdit.setText(self.get_canvas())
+
     def load_file(self):
         reply = QtGui.QMessageBox.question(self, 'Are you sure?',
                 "Do you want to save this first?",
@@ -114,6 +116,18 @@ class Window(QtGui.QMainWindow):
             self.ui.textEdit.setText(text)
         self.ui.statusbar.showMessage("loaded " + fn)
 
+    def get_canvas(self):
+        if getattr(sys, 'frozen', False):
+            path = os.path.join(
+                    os.path.dirname(sys.executable),
+                    "asc", "data", "canvas.pks")
+            with open(path, encoding="utf8") as f:
+                text = f.read()
+        else:
+            data = pkgutil.get_data('asc', os.path.join('data', 'canvas.pks'))
+            text = data.decode("utf8")
+        return text
+
     def new_file(self):
         reply = QtGui.QMessageBox.question(self, 'Are you sure?',
                 "Do you want to save this first?",
@@ -122,7 +136,7 @@ class Window(QtGui.QMainWindow):
             return self.save_file()
 
         self.file_name = ''
-        self.ui.textEdit.clear()
+        self.ui.textEdit.setText(self.get_canvas())
         self.ui.statusbar.showMessage("")
 
     def save_as(self):
@@ -201,7 +215,11 @@ class Window(QtGui.QMainWindow):
         script = script.replace("\r\n", "\n")
         include_path = (".", os.path.dirname(self.rom_file_name),
                 os.path.dirname(self.file_name), asc.get_program_dir())
-        script = asc.dirty_compile(script, include_path)
+        try:
+            script = asc.dirty_compile(script, include_path)
+        except Exception as e:
+            self.error_message(str(e))
+            return
         parsed_script, error, dyn = asc.asm_parse(script)
         if error:
             self.error_message(error)
