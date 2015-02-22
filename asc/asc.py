@@ -27,6 +27,7 @@ import ast
 from . import pokecommands as pk
 from . import text_translate
 from pprint import pprint
+from .preprocessor import preprocess, remove_comments
 
 MAX_NOPS = 10
 USING_WINDOWS = (os.name == 'nt')
@@ -74,8 +75,7 @@ def phdebug(bytes):
 def dirty_compile(text_script, include_path):
     text_script = remove_comments(text_script)
     text_script = re.sub("^[ \t]*", "", text_script, flags=re.MULTILINE)
-    text_script = apply_includes(text_script, include_path)
-    text_script = apply_defs(text_script)
+    text_script = preprocess(text_script, include_path)
     text_script = regexps(text_script)
     text_script = compile_clike_blocks(text_script)
     return text_script
@@ -93,61 +93,6 @@ def regexps(text_script):
     for label in re.findall(r"@\S+", text_script, re.MULTILINE):
         if not "#org "+label in text_script:
             raise Exception("ERROR: Unmatched @ label %s" % label)
-    return text_script
-
-def remove_comments(text):
-    comment_symbols = ['//', "'"]
-    pattern = "(//)|'(.*?)$"
-    replace = lambda s : re.sub(pattern, "", s, flags=re.MULTILINE)
-    # remove comments only in nontext lines
-    text = "\n".join([replace(s) if (len(s) > 1 and s[0] != "=") else s
-                        for s in text.split("\n")])
-    return text
-
-def apply_includes(text_script, paths):
-    list_script = text_script.split("\n")
-    for n, line in enumerate(list_script):
-        if "'" in line:
-            line = line[:line.find("'") - 1]
-        words = line.split(" ")
-        if len(words) == 2:
-            command = words[0]
-            name = words[1]
-            if command == "#include":
-                name = ast.literal_eval(name)
-                t = None
-                for d in paths:
-                    fname = os.path.join(d, name)
-                    if os.path.isfile(fname):
-                        with open(fname) as f:
-                            t = apply_includes(f.read(), paths)
-                        break
-                if t is None:
-                    raise FileNotFoundError("#include'd file {} not found".format(name))
-                text_script = text_script + t
-    return text_script
-
-def apply_defs(text_script):
-    ''' Runs the #define substitutions '''
-    list_script = text_script.split("\n")
-    for line in list_script:
-        if "'" in line:
-            line = line[:line.find("'") - 1]
-        words = line.split(" ")
-        if len(words) >= 3:
-            command = words[0]
-            name = words[1]
-            value = ' '.join(words[2:])
-            if command == "#define":
-                # Because CAMERA mustn't conflict with CAMERA_START
-                for i, j in ((" ", " "), ("(", " "), (" ", ")"), (" ", "\n"),
-                          ("\n", "\n")):
-                    text_script = text_script.replace(i + name + j, i + value + j)
-
-                if name[0] == '[' and name[-1] == ']':
-                    text_script = text_script.replace(name, value)
-    text_script = text_script.replace("#define", "'#define")
-    text_script = text_script.replace("#include", "'#include")
     return text_script
 
 def compile_clike_blocks(text_script, level=0):
@@ -304,7 +249,7 @@ def asm_parse(text_script, END_COMMANDS=["end", "softend"]):
         if command not in pk.pkcommands:
             error = ("ERROR: command not found in line " + str(num+1) + ":" +
                      "\n" + str(line))
-            return None, error, dyn
+            raise Exception(error)
         if "args" in pk.pkcommands[command]:    # if command has args
             arg_num = len(pk.pkcommands[command]["args"][1])
         else:
@@ -321,7 +266,7 @@ def asm_parse(text_script, END_COMMANDS=["end", "softend"]):
             args = pk.pkcommands[command]['args']
             if args and args[0]:
                 error += "Args needed: " + args[0] + " " + str(args[1])
-            return None, error, dyn
+            raise Exception(error)
 
         else:
             if command == "#org":
@@ -335,13 +280,10 @@ def asm_parse(text_script, END_COMMANDS=["end", "softend"]):
                     USING_DYNAMIC = True
                     dyn = (True, args[0])
                 else:
-                    error = "ERROR: #dyn/#dynamic statement needs an address argument"
-                    return None, error, dyn
+                    raise Exception("ERROR: #dyn/#dynamic statement needs an address argument")
 
             elif org_i == -1:
-                debug(command)
-                error = ("ERROR: No #org found on line " + str(num))
-                return None, error, dyn
+                raise Exception("ERROR: No #org found on line " + str(num))
 
             elif command in END_COMMANDS or words == ["#raw", "0xFE"]:
                 parsed_list[org_i].append(words)
@@ -353,7 +295,7 @@ def asm_parse(text_script, END_COMMANDS=["end", "softend"]):
                 if len(args) != 3:
                     error = ("ERROR: syntax error on line " + str(num + 1) +
                              "\nArgument number wrong in 'if'")
-                    return None, error, dyn
+                    raise Exception(error)
                 if args[1] == "jump":
                     branch = "jumpif"
                 elif args[1] == "call":
@@ -365,7 +307,7 @@ def asm_parse(text_script, END_COMMANDS=["end", "softend"]):
                 else:
                     error = ("ERROR: Command in 'if' must be jump, call, "
                              "jumpstd or callstd.")
-                    return None, error, dyn
+                    raise Exception(error)
                 operator = args[0]
                 if operator in OPERATORS:
                     operator = OPERATORS[operator]
@@ -389,8 +331,8 @@ def asm_parse(text_script, END_COMMANDS=["end", "softend"]):
                     debug("and the arg is this: ", arg)
                     error = ("ERROR: Arg too long (" + str(arg_len) + ", " +
                              str(this_arg_len) + ") on line " + str(num + 1))
-                    return None, error, dyn
-    return parsed_list, None, dyn
+                    raise Exception(error)
+    return parsed_list, dyn
 
 def text_len(text):
     #"0-9": "6",
@@ -498,7 +440,7 @@ def make_bytecode(script_list):
                                      "We did something wrong preparsing... "
                                      "Arg: " + hex(arg) +
                                      "\nCommand: " + command)
-                            return None, error
+                            raise Exception(error)
                         if len(pk.pkcommands[command]["args"]) == 3:
                             arg_bytes = (pk.pkcommands[command]["args"][2] +
                                          arg_bytes)
@@ -506,7 +448,7 @@ def make_bytecode(script_list):
                     else:
                         if arg[0] == "@" and not USING_DYNAMIC:
                             error = "No #dynamic statement"
-                            return None, error
+                            raise Exception(error)
                         # If we still have dynamic addresses, this compilation
                         # is just for calculating space,
                         # so we fill this with 00
@@ -519,7 +461,7 @@ def make_bytecode(script_list):
 
         hex_script = [addr, bytecode, labels]
         hex_scripts.append(hex_script)
-    return hex_scripts, None
+    return hex_scripts
 
 
 def put_addresses_labels(hex_chunks, text_script):
@@ -580,7 +522,7 @@ def put_addresses(hex_chunks, text_script, file_name, dyn):
                               hex(address_with_free_space) + '\n')
     # TODO: Comprovar si ha quedat alguna direcció (en un argument) dinàmica
     #       (No hauria)
-    return text_script, None, offsets_found_log
+    return text_script, offsets_found_log
 
 
 def write_hex_script(hex_scripts, rom_file_name):
@@ -759,15 +701,11 @@ def assemble(script, rom_file_name):
         elements each, the offset where data should be
         written and the data itself '''
     debug("parsing...")
-    parsed_script, error, dyn = asm_parse(script)
+    parsed_script, dyn = asm_parse(script)
     vpdebug(parsed_script)
-    if error:
-        raise Exception(error)
     debug("compiling...")
-    hex_script, error = make_bytecode(parsed_script)
+    hex_script = make_bytecode(parsed_script)
     debug(hex_script)
-    if error:
-        raise Exception(error)
     log = ''
     debug("doing dynamic and label things...")
 
@@ -785,19 +723,24 @@ def assemble(script, rom_file_name):
     script = put_addresses_labels(hex_script, script)
     vdebug(script)
 
-    parsed_script, error, dyn = asm_parse(script)
-    if error:
-        raise Exception(error)
+    parsed_script, dyn = asm_parse(script)
     debug("recompiling")
-    hex_script, error = make_bytecode(parsed_script)
-    if error:
-        raise Exception(error)
+    hex_script = make_bytecode(parsed_script)
     debug("yay!")
 
     # Remove the labels list, which will be empty and useless now
     for chunk in hex_script:
         del chunk[2] # Will always be []
     return hex_script, log
+
+def get_base_directive(rom_fn):
+    with open(rom_fn, "rb") as f:
+        f.seek(0xAC)
+        code = f.read(4)
+    return "#define " + {
+            b"AXVE": "RS",
+            b"BPRE": "FR",
+            b"BPEE": "EM"}[code] + "\n"
 
 def nice_dbg_output(hex_scripts):
     text = ''
@@ -875,10 +818,14 @@ def main():
     MAX_NOPS = (args.MAX_NOPS if MAX_NOPS in args else 10)
 
     if args.command in ["b", "c"]:
-        debug("reading file...")
+        debug("reading file...", args.script)
         script = open_script(args.script)
         vdebug(script)
         debug("compiling high-level stuff...")
+        try:
+            script = get_base_directive(args.rom) + script
+        except KeyError:
+            pass
         include_path = (".", os.path.dirname(args.rom),
                         os.path.dirname(args.script), get_program_dir())
         script = dirty_compile(script, include_path)
@@ -887,9 +834,8 @@ def main():
             print(script)
             return
         elif args.command == "b" and args.parse_only:
-            parsed_script, error, dyn = asm_parse(script)
+            parsed_script, dyn = asm_parse(script)
             pprint(parsed_script)
-            print(error)
             print(dyn)
             return
         hex_script, log = assemble(script, args.rom)

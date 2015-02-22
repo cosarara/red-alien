@@ -217,30 +217,22 @@ class Window(QtGui.QMainWindow):
                 os.path.dirname(self.file_name), asc.get_program_dir())
         try:
             script = asc.dirty_compile(script, include_path)
+            parsed_script, dyn = asc.asm_parse(script)
+            hex_script = asc.make_bytecode(parsed_script)
         except Exception as e:
             self.error_message(str(e))
-            return
-        parsed_script, error, dyn = asc.asm_parse(script)
-        if error:
-            self.error_message(error)
-            return
-        hex_script, error = asc.make_bytecode(parsed_script)
-        if error:
-            self.error_message(error)
             return
         log = ''
         if dyn[0]: # If there are dynamic addresses, we have to replace
                    # them with real adresses and recompile
-            script, error, log = asc.put_addresses(hex_script, script,
-                                                   self.rom_file_name, dyn[1])
+            script, log = asc.put_addresses(hex_script, script,
+                                            self.rom_file_name, dyn[1])
         script = asc.put_addresses_labels(hex_script, script)
-        parsed_script, error, dyn = asc.asm_parse(script)
-        if error:
-            self.error_message(error)
-            return
-        hex_script, error = asc.make_bytecode(parsed_script)
-        if error:
-            self.error_message(error)
+        try:
+            parsed_script, dyn = asc.asm_parse(script)
+            hex_script = asc.make_bytecode(parsed_script)
+        except Exception as e:
+            self.error_message(str(e))
             return
 
         for chunk in hex_script:
