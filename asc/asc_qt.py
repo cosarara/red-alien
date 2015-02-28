@@ -29,60 +29,27 @@ class Window(QtGui.QMainWindow):
                 QtGui.QIcon.Normal, QtGui.QIcon.Off)
         self.setWindowIcon(icon)
 
-        QtCore.QObject.connect(self.ui.actionOpen,
-                               QtCore.SIGNAL("triggered()"),
-                               self.load_file)
-        QtCore.QObject.connect(self.ui.actionNew,
-                               QtCore.SIGNAL("triggered()"),
-                               self.new_file)
-        QtCore.QObject.connect(self.ui.actionSave,
-                               QtCore.SIGNAL("triggered()"),
-                               self.save_file)
-        QtCore.QObject.connect(self.ui.actionSave_As,
-                               QtCore.SIGNAL("triggered()"),
-                               self.save_as)
-        QtCore.QObject.connect(self.ui.actionLoad_ROM,
-                               QtCore.SIGNAL("triggered()"),
-                               self.load_rom)
-        QtCore.QObject.connect(self.ui.actionQuit,
-                               QtCore.SIGNAL("triggered()"),
-                               self.close)
-        QtCore.QObject.connect(self.ui.actionDecompile,
-                               QtCore.SIGNAL("triggered()"),
-                               self.decompile)
-        QtCore.QObject.connect(self.ui.actionCompile,
-                               QtCore.SIGNAL("triggered()"),
-                               self.action_compile)
-        QtCore.QObject.connect(self.ui.actionDebug,
-                               QtCore.SIGNAL("triggered()"),
-                               self.action_debug)
-        QtCore.QObject.connect(self.ui.actionCut,
-                               QtCore.SIGNAL("triggered()"),
-                               self.ui.textEdit.cut)
-        QtCore.QObject.connect(self.ui.actionCopy,
-                               QtCore.SIGNAL("triggered()"),
-                               self.ui.textEdit.copy)
-        QtCore.QObject.connect(self.ui.actionPaste,
-                               QtCore.SIGNAL("triggered()"),
-                               self.ui.textEdit.paste)
-        QtCore.QObject.connect(self.ui.actionDelete,
-                               QtCore.SIGNAL("triggered()"),
-                               self.ui.textEdit.removeSelectedText)
-        QtCore.QObject.connect(self.ui.actionUndo,
-                               QtCore.SIGNAL("triggered()"),
-                               self.ui.textEdit.undo)
-        QtCore.QObject.connect(self.ui.actionRedo,
-                               QtCore.SIGNAL("triggered()"),
-                               self.ui.textEdit.redo)
-        QtCore.QObject.connect(self.ui.actionFind,
-                               QtCore.SIGNAL("triggered()"),
-                               self.find)
-        QtCore.QObject.connect(self.ui.actionInsert_String,
-                               QtCore.SIGNAL("triggered()"),
-                               self.insert_string)
-        QtCore.QObject.connect(self.ui.actionAbout,
-                               QtCore.SIGNAL("triggered()"),
-                               self.help_about)
+        cons = ((self.ui.actionOpen, self.load_file),
+                (self.ui.actionNew, self.new_file),
+                (self.ui.actionSave, self.save_file),
+                (self.ui.actionSave_As, self.save_as),
+                (self.ui.actionLoad_ROM, self.load_rom),
+                (self.ui.actionQuit, self.close),
+                (self.ui.actionDecompile, self.decompile),
+                (self.ui.actionCompile, self.action_compile),
+                (self.ui.actionDebug, self.action_debug),
+                (self.ui.actionCut, self.ui.textEdit.cut),
+                (self.ui.actionCopy, self.ui.textEdit.copy),
+                (self.ui.actionPaste, self.ui.textEdit.paste),
+                (self.ui.actionDelete, self.ui.textEdit.removeSelectedText),
+                (self.ui.actionUndo, self.ui.textEdit.undo),
+                (self.ui.actionRedo, self.ui.textEdit.redo),
+                (self.ui.actionFind, self.find),
+                (self.ui.actionInsert_String, self.insert_string),
+                (self.ui.actionAbout, self.help_about))
+        for action, function in cons:
+            action.triggered.connect(function)
+
         self.rom_file_name = ""
         self.file_name = ""
         # QScintilla
