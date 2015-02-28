@@ -21,17 +21,19 @@ import sys
 import os
 import pkgutil
 
-
 if getattr(sys, 'frozen', False):
     path = os.path.join(
-            os.path.dirname(sys.executable),
-            "asc", "data", "commands.txt")
+        os.path.dirname(sys.executable),
+        "asc", "data", "commands.txt")
     with open(path, encoding="utf8") as f:
         commands_str = f.read()
 else:
     data = pkgutil.get_data('asc', os.path.join('data', 'commands.txt'))
     commands_str = data.decode("utf8")
 
+pkcommands = {}
+aliases = {}
+# They will both get redefined in this exec
 exec(commands_str)
 
 pkcommands_and_aliases = pkcommands.copy()

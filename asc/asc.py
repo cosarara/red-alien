@@ -20,14 +20,13 @@
 
 import sys
 import os
-import binascii
 import argparse
 import re
-import ast
 from . import pokecommands as pk
 from . import text_translate
 from pprint import pprint
 from .preprocessor import preprocess, remove_comments
+import pkgutil
 
 MAX_NOPS = 10
 USING_WINDOWS = (os.name == 'nt')
@@ -60,17 +59,17 @@ def vpdebug(*args):
     if VERBOSE:
         pprint(*args)
 
-def hprint(bytes):
+def hprint(bytes_):
     def pad(s):
         return "0" + s if len(s) == 1 else s
 
-    for b in bytes:
+    for b in bytes_:
         print(pad(hex(b)[2:]), end=" ")
     print("")
 
-def phdebug(bytes):
+def phdebug(bytes_):
     if not QUIET:
-        hprint(bytes)
+        hprint(bytes_)
 
 def dirty_compile(text_script, include_path):
     text_script = remove_comments(text_script)
@@ -93,6 +92,103 @@ def regexps(text_script):
     for label in re.findall(r"@\S+", text_script, re.MULTILINE):
         if not "#org "+label in text_script:
             raise Exception("ERROR: Unmatched @ label %s" % label)
+    return text_script
+
+# TODO: better names for these functions
+def grep_part(text, start_pos, open_, close):
+    start_pos = start_pos + text[start_pos:].find(open_) + 1
+    s = -1
+    i = 0
+    for i, char in enumerate(text[start_pos:]):
+        if char == close:
+            s += 1
+        elif char == open_:
+            s -= 1
+        if s == 0:
+            break
+    else:
+        raise Exception("No matching " + close + " found")
+    end_pos = start_pos + i
+    return start_pos, end_pos
+
+def grep_statement(text, name):
+    pos = re.search(name + r".?\(", text).start()
+    condition_start, condition_end = grep_part(text, pos, "(", ")")
+    condition = text[condition_start:condition_end]
+    body_start, body_end = grep_part(text, pos, "{", "}")
+    body = text[body_start:body_end]
+    return (pos, body_end+1, condition, body)
+
+def compile_while(text_script, level):
+    pos, end_pos, condition, body = grep_statement(text_script, "while")
+    body = compile_clike_blocks(body, level+1)
+    # Any operator in the condition expression
+    part = ":while_start" + str(level) + '\n'
+    for operator in OPERATORS_LIST:
+        if operator in condition:
+            var, constant = condition.split(operator)
+            part += "compare " + var.strip() + " " + constant.strip() + "\n"
+            part += ("if " + OPPOSITE_OPERATORS[operator] +
+                     " jump :while_end" + str(level) + '\n')
+            break
+    else:
+        # We are checking a flag
+        if condition[0] == "!":
+            flag = condition[1:]
+            operator = "=="
+        else:
+            flag = condition
+            operator = "!="
+        part += "checkflag " + flag + "\n"
+        part += "if " + operator + " jump :while_end" + str(level) + '\n'
+    part += body
+    part += "\njump :while_start" + str(level)
+    part += "\n:while_end" + str(level) + "\n"
+    # hack
+    if text_script[pos] == "\n":
+        pos -= 1
+    if text_script[end_pos] == "\n":
+        end_pos += 1
+    text_script = text_script[:pos] + part + text_script[end_pos:]
+    return text_script
+
+def compile_if(text_script, level):
+    pos, end_pos, condition, body = grep_statement(text_script, "if")
+    body = compile_clike_blocks(body)
+    have_else = re.match("\\selse\\s*?{", text_script[end_pos:])
+    # Any operator in the condition expression
+    part = ''
+    for operator in OPERATORS_LIST:
+        if operator in condition:
+            var, constant = condition.split(operator)
+            part += "compare " + var.strip() + " " + constant.strip() + "\n"
+            part += ("if " + OPPOSITE_OPERATORS[operator] +
+                     " jump :if_end" + str(level) + '\n')
+            break
+    else:
+        # We are checking a flag
+        if condition[0] == "!":
+            flag = condition[1:]
+            operator = "=="
+        else:
+            flag = condition
+            operator = "!="
+        part += "checkflag " + flag + "\n"
+        part += "if " + operator + " jump :if_end" + str(level) + "\n"
+    part += body
+    if have_else:
+        else_body_start, else_body_end = grep_part(text_script,
+                                                   end_pos, "{", "}")
+        else_body = text_script[else_body_start:else_body_end]
+        else_body = compile_clike_blocks(else_body, level+1)
+        part += "\njump :else_end" + str(level) + "\n"
+        part += ":if_end" + str(level) + "\n"
+        part += else_body + '\n:else_end' + str(level) + '\n'
+        end_pos = else_body_end + 1
+
+    else:
+        part += "\n:if_end" + str(level)
+    text_script = text_script[:pos] + part + text_script[end_pos:]
     return text_script
 
 def compile_clike_blocks(text_script, level=0):
@@ -120,110 +216,20 @@ def compile_clike_blocks(text_script, level=0):
     # (<var num> <operator> <literal num>)
     # or
     # (<flag num>)
-    # TODO: better names for these functions
-    def grep_part(text, start_pos, open, close):
-        start_pos = start_pos + text[start_pos:].find(open) + 1
-        s = -1
-        i = 0
-        for i, char in enumerate(text[start_pos:]):
-            if char == close:
-                s += 1
-            elif char == open:
-                s -= 1
-            if s == 0:
-                break
-        else:
-            raise Exception("No matching " + close + " found")
-        end_pos = start_pos + i
-        return start_pos, end_pos
-
-    def grep_statement(text, name):
-        pos = re.search(name + r".?\(", text).start()
-        condition_start, condition_end = grep_part(text, pos, "(", ")")
-        condition = text[condition_start:condition_end]
-        body_start, body_end = grep_part(text, pos, "{", "}")
-        body = text[body_start:body_end]
-        return (pos, body_end+1, condition, body)
-
 
     while re.search(r"while.?\(", text_script):
-        pos, end_pos, condition, body = grep_statement(text_script, "while")
-        body = compile_clike_blocks(body, level+1)
-        # Any operator in the condition expression
-        part = ":while_start" + str(level) + '\n'
-        for operator in OPERATORS_LIST:
-            if operator in condition:
-                var, constant = condition.split(operator)
-                part += "compare " + var.strip() + " " + constant.strip() + "\n"
-                part += ("if " + OPPOSITE_OPERATORS[operator] +
-                         " jump :while_end" + str(level) + '\n')
-                break
-        else:
-            # We are checking a flag
-            if condition[0] == "!":
-                flag = condition[1:]
-                operator = "=="
-            else:
-                flag = condition
-                operator = "!="
-            part += "checkflag " + flag + "\n"
-            part += "if " + operator + " jump :while_end" + str(level) + '\n'
-        part += body
-        part += "\njump :while_start" + str(level)
-        part += "\n:while_end" + str(level) + "\n"
-        # hack
-        if text_script[pos] == "\n":
-            pos -= 1
-        if text_script[end_pos] == "\n":
-            end_pos += 1
-        text_script = text_script[:pos] + part + text_script[end_pos:]
+        text_script = compile_while(text_script, level)
         level += 1
 
     # I'll refactor this one day, I promise =P
     while re.search(r"if.?\(", text_script):
-        pos, end_pos, condition, body = grep_statement(text_script, "if")
-        body = compile_clike_blocks(body)
-        have_else = re.match("\\selse\\s*?{", text_script[end_pos:])
-        # Any operator in the condition expression
-        part = ''
-        for operator in OPERATORS_LIST:
-            if operator in condition:
-                var, constant = condition.split(operator)
-                part += "compare " + var.strip() + " " + constant.strip() + "\n"
-                part += ("if " + OPPOSITE_OPERATORS[operator] +
-                         " jump :if_end" + str(level) + '\n')
-                break
-        else:
-            # We are checking a flag
-            if condition[0] == "!":
-                flag = condition[1:]
-                operator = "=="
-            else:
-                flag = condition
-                operator = "!="
-            part += "checkflag " + flag + "\n"
-            part += "if " + operator + " jump :if_end" + str(level) + "\n"
-        part += body
-        if have_else:
-            else_body_start, else_body_end = grep_part(text_script,
-                                                       end_pos, "{", "}")
-            else_body = text_script[else_body_start:else_body_end]
-            else_body = compile_clike_blocks(else_body, level+1)
-            part += "\njump :else_end" + str(level) + "\n"
-            part += ":if_end" + str(level) + "\n"
-            part += else_body + '\n:else_end' + str(level) + '\n'
-            end_pos = else_body_end + 1
-
-        else:
-            part += "\n:if_end" + str(level)
-        text_script = text_script[:pos] + part + text_script[end_pos:]
-        #debug(text_script)
+        text_script = compile_if(text_script, level)
         level += 1
 
     text_script = text_script.strip("\n")
     return text_script
 
-def asm_parse(text_script, END_COMMANDS=["end", "softend"]):
+def asm_parse(text_script, end_commands=("end", "softend")):
     ''' The basic language preparsing function '''
     list_script = text_script.split("\n")
     org_i = -1
@@ -232,13 +238,10 @@ def asm_parse(text_script, END_COMMANDS=["end", "softend"]):
 
     for num, line in enumerate(list_script):
         line = line.rstrip(" ")
-        # TODO: deprecated (done in preparsing)
-        if "'" in line:                # Eliminem commentaris
-            line = line[:line.find("'")]
-            line = line.rstrip(" ")
         if line == "":
             continue
-        if line[0] == ":": # Labels for goto's
+        # Labels for goto's
+        if line[0] == ":":
             parsed_list[org_i].append([line])
             continue
 
@@ -250,17 +253,16 @@ def asm_parse(text_script, END_COMMANDS=["end", "softend"]):
             error = ("ERROR: command not found in line " + str(num+1) + ":" +
                      "\n" + str(line))
             raise Exception(error)
-        if "args" in pk.pkcommands[command]:    # if command has args
+        # if command has args
+        if "args" in pk.pkcommands[command]:
             arg_num = len(pk.pkcommands[command]["args"][1])
         else:
             arg_num = 0
 
         if len(args) != arg_num and command != '=':
-            error = "ERROR: wrong argument number in line " + str(num+1) + '\n'
-            error += line + '\n'
-            error += str(args) + '\n'
-            error += "Args given: " + str(len(args)) + '\n'
-            error += "Context:\n"
+            error = ("ERROR: wrong argument number in line " + str(num+1) + '\n'
+                     + line + '\n' + str(args) + '\n' + "Args given: " +
+                     str(len(args)) + '\n' + "Context:\n")
             for line_num in range(num-3, num+6):
                 error += "    " + list_script[line_num] + "\n"
             args = pk.pkcommands[command]['args']
@@ -285,7 +287,7 @@ def asm_parse(text_script, END_COMMANDS=["end", "softend"]):
             elif org_i == -1:
                 raise Exception("ERROR: No #org found on line " + str(num))
 
-            elif command in END_COMMANDS or words == ["#raw", "0xFE"]:
+            elif command in end_commands or words == ["#raw", "0xFE"]:
                 parsed_list[org_i].append(words)
 
             elif command == "=":
@@ -348,25 +350,25 @@ def text_len(text):
     #"male": "6",
     #"female": "6",
     kernings = {
-            "!": 3,
-            "?": 6,
-            ".": 3,
-            ":": 5,
-            "·": 3,
-            "'": 3,
-            ",": 3,
-            "i": 4,
-            "j": 5,
-            "l": 3,
-            "r": 5,
-            ":": 3,
-            "↑": 7,
-            "→": 7,
-            "↓": 7,
-            "←": 7,
-            "+": 7,
-            " ": 3,
-            }
+        "!": 3,
+        "?": 6,
+        ".": 3,
+        #":": 5,
+        "·": 3,
+        "'": 3,
+        ",": 3,
+        "i": 4,
+        "j": 5,
+        "l": 3,
+        "r": 5,
+        ":": 3,
+        "↑": 7,
+        "→": 7,
+        "↓": 7,
+        "←": 7,
+        "+": 7,
+        " ": 3,
+    }
     return sum([kernings[c] if c in kernings else 6 for c in text])
 
 def autocut_text(text):
@@ -467,7 +469,7 @@ def make_bytecode(script_list):
 def put_addresses_labels(hex_chunks, text_script):
     ''' Calculates the real address for :labels and does the needed
         searches and replacements. '''
-    for i, chunk in enumerate(hex_chunks):
+    for chunk in hex_chunks:
         for label in chunk[2]:
             vdebug(label)
             name = label[0]
@@ -494,13 +496,12 @@ def put_addresses(hex_chunks, text_script, file_name, dyn):
         vdebug(chunk)
         offset = chunk[0]
         part = chunk[1] # The hex chunk we have to put somewhere
-        labels = chunk[2]
+        #labels = chunk[2]
         if offset[0] != "@":
             continue
         length = len(part) + 2
         free_space = b"\xFF" * length
-        address_with_free_space = rom_bytes.find(free_space,
-                                                last)
+        address_with_free_space = rom_bytes.find(free_space, last)
         # It's always good to leave some margin around things.
         # If there is free space at the address the user has given us,
         # though, it's ok to use it without margin.
@@ -520,10 +521,7 @@ def put_addresses(hex_chunks, text_script, file_name, dyn):
         last = address_with_free_space + length + 10
         offsets_found_log += (offset + ' - ' +
                               hex(address_with_free_space) + '\n')
-    # TODO: Comprovar si ha quedat alguna direcció (en un argument) dinàmica
-    #       (No hauria)
     return text_script, offsets_found_log
-
 
 def write_hex_script(hex_scripts, rom_file_name):
     ''' Write every chunk of bytes onto the big ROM file '''
@@ -555,14 +553,13 @@ def decompile(file_name, offset, type_="script", raw=False,
     decompiled_offsets = []
     while offsets:
         offset = offsets[0][0]
-        rom_offset = get_rom_offset(offset)
         type_ = offsets[0][1]
         if type_ == "script":
             textscript_, new_offsets = demake_bytecode(rombytes, offset,
-                                                        offsets,
-                                                        end_commands=end_commands,
-                                                        end_hex_commands=end_hex_commands,
-                                                        raw=raw)
+                                                       offsets,
+                                                       end_commands=end_commands,
+                                                       end_hex_commands=end_hex_commands,
+                                                       raw=raw)
             textscript += ("#org " + hex(offset) + "\n" +
                            textscript_ + "\n")
             for new_offset in new_offsets:
@@ -576,9 +573,9 @@ def decompile(file_name, offset, type_="script", raw=False,
             text = "".join([("= " + line + "\n") for line in lines])
             textscript += ("#org " + hex(offset) + "\n" + text)
         if type_ == "movs":
-            textscript_, offsets_ = decompile_movs(rombytes, offset, raw=raw)
+            textscript_tmp = decompile_movs(rombytes, offset, raw=raw)
             textscript += ("#org " + hex(offset) + "\n" +
-                           textscript_ + "\n")
+                           textscript_tmp + "\n")
         del offsets[0]
         decompiled_offsets.append(offset)
         # Removing duplicates doesn't hurt, right?
@@ -593,8 +590,8 @@ def get_rom_offset(offset):
     return rom_offset
 
 def demake_bytecode(rombytes, offset, added_offsets,
-                     end_commands=END_COMMANDS,
-                     end_hex_commands=END_HEX_COMMANDS, raw=False):
+                    end_commands=END_COMMANDS,
+                    end_hex_commands=END_HEX_COMMANDS, raw=False):
     rom_offset = get_rom_offset(offset)
     offsets = []
     hexscript = rombytes
@@ -604,8 +601,8 @@ def demake_bytecode(rombytes, offset, added_offsets,
     hex_command = 0
     hex_command = hexscript[i]
     nop_count = 0 # Stop on 10 nops for safety
-    while (text_command not in END_COMMANDS and
-           hex_command not in END_HEX_COMMANDS):
+    while (text_command not in end_commands and
+           hex_command not in end_hex_commands):
         hex_command = hexscript[i]
         if hex_command in pk.dec_pkcommands and not raw:
             text_command = pk.dec_pkcommands[hex_command]
@@ -647,24 +644,22 @@ def demake_bytecode(rombytes, offset, added_offsets,
     return textscript, offsets
 
 
-def decompile_movs(romtext, offset, END_HEX_COMMANDS=[0xFE, 0xFF], raw=False):
+def decompile_movs(romtext, offset, end_hex_commands=[0xFE, 0xFF], raw=False):
     rom_offset = get_rom_offset(offset)
     vdebug(offset)
     hexscript = romtext
     i = rom_offset
     textscript = ""
-    text_command = ""
     hex_command = ""
-    while hex_command not in END_HEX_COMMANDS:
+    while hex_command not in end_hex_commands:
         try:
             hex_command = hexscript[i]
         except IndexError:
             break
-        text_command = "#raw"
         textscript += "#raw " + hex(hex_command)
         i += 1
         textscript += "\n"
-    return textscript, []
+    return textscript
 
 
 def decompile_text(romtext, offset, raw=False):
@@ -712,8 +707,8 @@ def assemble(script, rom_file_name):
     if dyn[0] and rom_file_name:
         debug("going dynamic!")
         debug("replacing dyn addresses by offsets...")
-        script, error, log = put_addresses(hex_script, script,
-                                         rom_file_name, dyn[1])
+        script, log = put_addresses(hex_script, script,
+                                    rom_file_name, dyn[1])
         vdebug(script)
 
     # Now with :labels we have to recompile even if
@@ -738,9 +733,9 @@ def get_base_directive(rom_fn):
         f.seek(0xAC)
         code = f.read(4)
     return "#define " + {
-            b"AXVE": "RS",
-            b"BPRE": "FR",
-            b"BPEE": "EM"}[code] + "\n"
+        b"AXVE": "RS",
+        b"BPRE": "FR",
+        b"BPEE": "EM"}[code] + "\n"
 
 def nice_dbg_output(hex_scripts):
     text = ''
@@ -755,6 +750,18 @@ def nice_dbg_output(hex_scripts):
         script_text += line
         script_text += '\n'
         text += script_text
+    return text
+
+def get_canvas():
+    if getattr(sys, 'frozen', False):
+        path = os.path.join(
+            os.path.dirname(sys.executable),
+            "asc", "data", "canvas.pks")
+        with open(path, encoding="utf8") as f:
+            text = f.read()
+    else:
+        data = pkgutil.get_data('asc', os.path.join('data', 'canvas.pks'))
+        text = data.decode("utf8")
     return text
 
 def get_program_dir():
@@ -795,7 +802,6 @@ def main():
     h = 'How many nop bytes until it stops (0 to never stop). Defaults to 10'
     parser_d.add_argument('--max-nops', default=10, type=int, help=h)
 
-    global END_COMMANDS
     for end_command in END_COMMANDS:
         msg = ('whether or not to stop decompiling when a ' + end_command +
                ' is found')
@@ -856,8 +862,8 @@ def main():
             END_COMMANDS.remove(end_command)
         print("'" + '-'*20)
         end_hex_commands = [] if args.continue_on_0xFF else END_HEX_COMMANDS
-        type = "text" if args.text else "script"
-        print(decompile(args.rom, int(args.offset, 16), type, raw=args.raw,
+        type_ = "text" if args.text else "script"
+        print(decompile(args.rom, int(args.offset, 16), type_, raw=args.raw,
                         end_commands=END_COMMANDS,
                         end_hex_commands=end_hex_commands))
 

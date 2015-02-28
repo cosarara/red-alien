@@ -17,14 +17,15 @@
 #    along with ASC.  If not, see <http://www.gnu.org/licenses/>.
 
 import string
+from string import hexdigits
 import sys
 import os
 import pkgutil
 
 if getattr(sys, 'frozen', False):
     tablepath = os.path.join(
-            os.path.dirname(sys.executable),
-            "asc", "data", "pktext.tbl")
+        os.path.dirname(sys.executable),
+        "asc", "data", "pktext.tbl")
     with open(tablepath, encoding="utf8") as tblfile:
         table_str = tblfile.read().rstrip("\n")
 else:
@@ -55,8 +56,7 @@ def ascii_to_hex(astring, dictionary=read_table_encode(table_str)):
     while i < len(astring):
         character = astring[i]
         if character == "\\" and astring[i + 1] == "h":
-            if (astring[i + 2] in string.hexdigits and
-                astring[i + 3] in string.hexdigits):
+            if astring[i+2] in hexdigits and astring[i+3] in hexdigits:
                 trans_string += bytes((int(astring[i+2:i+4], 16),))
                 i += 3
         elif character in dictionary:

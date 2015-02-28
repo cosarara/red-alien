@@ -1,7 +1,9 @@
 #!/usr/bin/python3
 
+""" Blue Spider's GUI """
+
 import sys
-from PyQt5 import Qt, QtCore, QtGui, QtWidgets
+from PyQt5 import QtCore, QtGui, QtWidgets
 from PyQt5 import Qsci
 import argparse
 import pkgutil
@@ -11,14 +13,14 @@ from . import asc
 
 class Window(QtWidgets.QMainWindow):
     def __init__(self, parent=None):
-        QtWidgets.QWidget.__init__(self, parent)
+        QtWidgets.QMainWindow.__init__(self, parent)
         self.ui = Ui_MainWindow()
         self.ui.setupUi(self)
 
         if getattr(sys, 'frozen', False):
             iconpath = os.path.join(
-                    os.path.dirname(sys.executable),
-                    "asc", "data", "icon.svg")
+                os.path.dirname(sys.executable),
+                "asc", "data", "icon.svg")
             pixmap = QtGui.QPixmap(iconpath)
         else:
             icon = pkgutil.get_data('asc', os.path.join('data', 'icon.svg'))
@@ -26,7 +28,7 @@ class Window(QtWidgets.QMainWindow):
             pixmap.loadFromData(icon)
         icon = QtGui.QIcon()
         icon.addPixmap(pixmap,
-                QtGui.QIcon.Normal, QtGui.QIcon.Off)
+                       QtGui.QIcon.Normal, QtGui.QIcon.Off)
         self.setWindowIcon(icon)
 
         cons = ((self.ui.actionOpen, self.load_file),
@@ -61,12 +63,13 @@ class Window(QtWidgets.QMainWindow):
         lexer.setDefaultFont(self.font)
         self.ui.textEdit.setLexer(lexer)
 
-        self.ui.textEdit.setText(self.get_canvas())
+        self.ui.textEdit.setText(asc.get_canvas())
 
     def load_file(self):
         reply = QtWidgets.QMessageBox.question(self, 'Are you sure?',
-                "Do you want to save this first?",
-                QtWidgets.QMessageBox.Yes, QtWidgets.QMessageBox.No)
+                                               "Do you want to save this first?",
+                                               QtWidgets.QMessageBox.Yes,
+                                               QtWidgets.QMessageBox.No)
         if reply == QtWidgets.QMessageBox.Yes:
             return self.save_file()
 
@@ -83,27 +86,16 @@ class Window(QtWidgets.QMainWindow):
             self.ui.textEdit.setText(text)
         self.ui.statusbar.showMessage("loaded " + fn)
 
-    def get_canvas(self):
-        if getattr(sys, 'frozen', False):
-            path = os.path.join(
-                    os.path.dirname(sys.executable),
-                    "asc", "data", "canvas.pks")
-            with open(path, encoding="utf8") as f:
-                text = f.read()
-        else:
-            data = pkgutil.get_data('asc', os.path.join('data', 'canvas.pks'))
-            text = data.decode("utf8")
-        return text
-
     def new_file(self):
         reply = QtWidgets.QMessageBox.question(self, 'Are you sure?',
-                "Do you want to save this first?",
-                QtWidgets.QMessageBox.Yes, QtWidgets.QMessageBox.No)
+                                               "Do you want to save this first?",
+                                               QtWidgets.QMessageBox.Yes,
+                                               QtWidgets.QMessageBox.No)
         if reply == QtWidgets.QMessageBox.Yes:
             return self.save_file()
 
         self.file_name = ''
-        self.ui.textEdit.setText(self.get_canvas())
+        self.ui.textEdit.setText(asc.get_canvas())
         self.ui.statusbar.showMessage("")
 
     def save_as(self):
@@ -140,8 +132,9 @@ class Window(QtWidgets.QMainWindow):
 
     def decompile(self, offset=None):
         reply = QtWidgets.QMessageBox.question(self, 'Are you sure?',
-                "Do you want to save this first?",
-                QtWidgets.QMessageBox.Yes, QtWidgets.QMessageBox.No)
+                                               "Do you want to save this first?",
+                                               QtWidgets.QMessageBox.Yes,
+                                               QtWidgets.QMessageBox.No)
         if reply == QtWidgets.QMessageBox.Yes:
             return self.save_file()
 
@@ -150,8 +143,8 @@ class Window(QtWidgets.QMainWindow):
             return
 
         if not offset:
-            text, ok = QtWidgets.QInputDialog.getText(self, 'Decompile',
-                                                  'Enter offset (prefix with 0x for hex):')
+            text, ok = QtWidgets.QInputDialog.getText(
+                self, 'Decompile', 'Enter offset (prefix with 0x for hex):')
             if not ok or not text:
                 return
             if len(text) > 2 and text[:2] == "0x":
@@ -181,7 +174,7 @@ class Window(QtWidgets.QMainWindow):
         script = str(self.ui.textEdit.text())
         script = script.replace("\r\n", "\n")
         include_path = (".", os.path.dirname(self.rom_file_name),
-                os.path.dirname(self.file_name), asc.get_program_dir())
+                        os.path.dirname(self.file_name), asc.get_program_dir())
         try:
             script = asc.dirty_compile(script, include_path)
             parsed_script, dyn = asc.asm_parse(script)
@@ -208,24 +201,24 @@ class Window(QtWidgets.QMainWindow):
         if mode == "compile":
             asc.write_hex_script(hex_script, self.rom_file_name)
             QtWidgets.QMessageBox.information(self, "Done!",
-                                          "Script compiled and written "
-                                          "successfully")
+                                              "Script compiled and written "
+                                              "successfully")
         else:
-            # TODO: A custom message window with monospace font and scroll
-            hexpopup = LogPopup(self, asc.nice_dbg_output(hex_script))
-            #QtWidgets.QMessageBox.information(self, "Script in hex",
-            #            asc.nice_dbg_output(hex_script))
+            LogPopup(self, asc.nice_dbg_output(hex_script))
+
         if log:
-            logpopup = LogPopup(self, log)
+            LogPopup(self, log)
 
     def help_about(self):
-        QtWidgets.QMessageBox.about(self, "About Red Alien", ("Red Alien,"
-                                      "the Advanced Pokémon Script Compiler\n"
-                                      "Copyright © 2012 Jaume Delclòs Coll\n"
-                                      "(aka cosarara97)"))
+        QtWidgets.QMessageBox.about(self, "About Red Alien",
+                                    ("Red Alien,"
+                                     "the Advanced Pokémon Script Compiler\n"
+                                     "Copyright © 2012 Jaume Delclòs Coll\n"
+                                     "(aka cosarara97)"))
 
     def find(self):
         startline, starti = self.ui.textEdit.getCursorPosition()
+        line_n = startline
         s, ok = QtWidgets.QInputDialog.getText(self, 'Find', 'Text to find:')
         if not ok or not s:
             return
@@ -247,7 +240,8 @@ class Window(QtWidgets.QMainWindow):
                 if i != -1:
                     b = 1
                     break
-            if b: break
+            if b:
+                break
         if i == -1:
             QtWidgets.QMessageBox.critical(self, "Error", "Text not found")
             return
@@ -256,7 +250,7 @@ class Window(QtWidgets.QMainWindow):
     def insert_string(self):
         popup = InsertTextBoxPopup(self)
         popup.exec_()
-        line, pos = self.ui.textEdit.getCursorPosition()
+        line, _ = self.ui.textEdit.getCursorPosition()
         text = self.ui.textEdit.text()
         i = asc.find_nth(text, "\n", line)
         to_insert = "".join(["= " + l + "\n" for l in popup.text.split("\n")])
@@ -309,7 +303,7 @@ class InsertTextBoxPopup(QtWidgets.QDialog):
         self.setLayout(vbox)
         self.text = ""
 
-    def curPosChanged(self, l, i):
+    def curPosChanged(self, l, _):
         text = self.textedit.text()
         line = text.split("\n")[l]
         out = str(asc.text_len(line)) + "/" + str(35*6) + " px"
