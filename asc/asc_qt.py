@@ -1,17 +1,17 @@
 #!/usr/bin/python3
 
 import sys
-from PyQt4 import Qt, QtCore, QtGui
-from PyQt4 import Qsci
+from PyQt5 import Qt, QtCore, QtGui, QtWidgets
+from PyQt5 import Qsci
 import argparse
 import pkgutil
 import os
 from .qtgui import Ui_MainWindow
 from . import asc
 
-class Window(QtGui.QMainWindow):
+class Window(QtWidgets.QMainWindow):
     def __init__(self, parent=None):
-        QtGui.QWidget.__init__(self, parent)
+        QtWidgets.QWidget.__init__(self, parent)
         self.ui = Ui_MainWindow()
         self.ui.setupUi(self)
 
@@ -64,16 +64,16 @@ class Window(QtGui.QMainWindow):
         self.ui.textEdit.setText(self.get_canvas())
 
     def load_file(self):
-        reply = QtGui.QMessageBox.question(self, 'Are you sure?',
+        reply = QtWidgets.QMessageBox.question(self, 'Are you sure?',
                 "Do you want to save this first?",
-                QtGui.QMessageBox.Yes, QtGui.QMessageBox.No)
-        if reply == QtGui.QMessageBox.Yes:
+                QtWidgets.QMessageBox.Yes, QtWidgets.QMessageBox.No)
+        if reply == QtWidgets.QMessageBox.Yes:
             return self.save_file()
 
-        fn = QtGui.QFileDialog.getOpenFileName(self, 'Open file',
-                                               QtCore.QDir.homePath(),
-                                               "Pokemon script (*.pks);;"
-                                               "All files (*)")
+        fn, _ = QtWidgets.QFileDialog.getOpenFileName(self, 'Open file',
+                                                      QtCore.QDir.homePath(),
+                                                      "Pokemon script (*.pks);;"
+                                                      "All files (*)")
         if not fn:
             return
         self.file_name = fn
@@ -96,10 +96,10 @@ class Window(QtGui.QMainWindow):
         return text
 
     def new_file(self):
-        reply = QtGui.QMessageBox.question(self, 'Are you sure?',
+        reply = QtWidgets.QMessageBox.question(self, 'Are you sure?',
                 "Do you want to save this first?",
-                QtGui.QMessageBox.Yes, QtGui.QMessageBox.No)
-        if reply == QtGui.QMessageBox.Yes:
+                QtWidgets.QMessageBox.Yes, QtWidgets.QMessageBox.No)
+        if reply == QtWidgets.QMessageBox.Yes:
             return self.save_file()
 
         self.file_name = ''
@@ -107,10 +107,10 @@ class Window(QtGui.QMainWindow):
         self.ui.statusbar.showMessage("")
 
     def save_as(self):
-        fn = QtGui.QFileDialog.getSaveFileName(self, 'Save file',
-                                               QtCore.QDir.homePath(),
-                                               "Pokemon Script (*.pks);;"
-                                               "All files (*)")
+        fn, _ = QtWidgets.QFileDialog.getSaveFileName(self, 'Save file',
+                                                      QtCore.QDir.homePath(),
+                                                      "Pokemon Script (*.pks);;"
+                                                      "All files (*)")
         if fn:
             self.file_name = fn
             self.save_file()
@@ -124,10 +124,10 @@ class Window(QtGui.QMainWindow):
         self.ui.statusbar.showMessage("file saved as " + fn)
 
     def load_rom(self):
-        fn = QtGui.QFileDialog.getOpenFileName(self, 'Open ROM file',
-                                               QtCore.QDir.homePath(),
-                                               "GBA ROM (*.gba);;"
-                                               "All files (*)")
+        fn, _ = QtWidgets.QFileDialog.getOpenFileName(self, 'Open ROM file',
+                                                      QtCore.QDir.homePath(),
+                                                      "GBA ROM (*.gba);;"
+                                                      "All files (*)")
         if not fn:
             return
         self.rom_file_name = fn
@@ -139,18 +139,18 @@ class Window(QtGui.QMainWindow):
         self.compile("debug")
 
     def decompile(self, offset=None):
-        reply = QtGui.QMessageBox.question(self, 'Are you sure?',
+        reply = QtWidgets.QMessageBox.question(self, 'Are you sure?',
                 "Do you want to save this first?",
-                QtGui.QMessageBox.Yes, QtGui.QMessageBox.No)
-        if reply == QtGui.QMessageBox.Yes:
+                QtWidgets.QMessageBox.Yes, QtWidgets.QMessageBox.No)
+        if reply == QtWidgets.QMessageBox.Yes:
             return self.save_file()
 
         if not self.rom_file_name:
-            QtGui.QMessageBox.critical(self, "Error", "No ROM loaded")
+            QtWidgets.QMessageBox.critical(self, "Error", "No ROM loaded")
             return
 
         if not offset:
-            text, ok = QtGui.QInputDialog.getText(self, 'Decompile',
+            text, ok = QtWidgets.QInputDialog.getText(self, 'Decompile',
                                                   'Enter offset (prefix with 0x for hex):')
             if not ok or not text:
                 return
@@ -158,23 +158,23 @@ class Window(QtGui.QMainWindow):
                 try:
                     offset = int(text, 16)
                 except ValueError:
-                    QtGui.QMessageBox.critical(self, "Error", "Invalid offset")
+                    QtWidgets.QMessageBox.critical(self, "Error", "Invalid offset")
                     return
             else:
                 try:
                     offset = int(text)
                 except ValueError:
-                    QtGui.QMessageBox.critical(self, "Error", "Invalid offset")
+                    QtWidgets.QMessageBox.critical(self, "Error", "Invalid offset")
                     return
         self.ui.textEdit.setText(asc.decompile(self.rom_file_name, offset))
 
     def error_message(self, msg):
-        QtGui.QMessageBox.critical(self, "Error", msg)
+        QtWidgets.QMessageBox.critical(self, "Error", msg)
 
     def compile(self, mode): # In "compile" mode, writes changes to ROM
                              # In "debug" it doesn't
         if not self.rom_file_name:
-            QtGui.QMessageBox.critical(self, "Error", "No ROM loaded")
+            QtWidgets.QMessageBox.critical(self, "Error", "No ROM loaded")
             return
         #with open(self.rom_file_name, 'rb') as f:
         #    self.rom_contents = f.read()
@@ -207,26 +207,26 @@ class Window(QtGui.QMainWindow):
 
         if mode == "compile":
             asc.write_hex_script(hex_script, self.rom_file_name)
-            QtGui.QMessageBox.information(self, "Done!",
+            QtWidgets.QMessageBox.information(self, "Done!",
                                           "Script compiled and written "
                                           "successfully")
         else:
             # TODO: A custom message window with monospace font and scroll
             hexpopup = LogPopup(self, asc.nice_dbg_output(hex_script))
-            #QtGui.QMessageBox.information(self, "Script in hex",
+            #QtWidgets.QMessageBox.information(self, "Script in hex",
             #            asc.nice_dbg_output(hex_script))
         if log:
             logpopup = LogPopup(self, log)
 
     def help_about(self):
-        QtGui.QMessageBox.about(self, "About Red Alien", ("Red Alien,"
+        QtWidgets.QMessageBox.about(self, "About Red Alien", ("Red Alien,"
                                       "the Advanced Pokémon Script Compiler\n"
                                       "Copyright © 2012 Jaume Delclòs Coll\n"
                                       "(aka cosarara97)"))
 
     def find(self):
         startline, starti = self.ui.textEdit.getCursorPosition()
-        s, ok = QtGui.QInputDialog.getText(self, 'Find', 'Text to find:')
+        s, ok = QtWidgets.QInputDialog.getText(self, 'Find', 'Text to find:')
         if not ok or not s:
             return
         t = self.ui.textEdit.text().split('\n')
@@ -249,7 +249,7 @@ class Window(QtGui.QMainWindow):
                     break
             if b: break
         if i == -1:
-            QtGui.QMessageBox.critical(self, "Error", "Text not found")
+            QtWidgets.QMessageBox.critical(self, "Error", "Text not found")
             return
         self.ui.textEdit.setCursorPosition(line_n, i+len(s))
 
@@ -263,18 +263,18 @@ class Window(QtGui.QMainWindow):
         self.ui.textEdit.setText(text[:i] + to_insert + text[i:])
         print(popup.text)
 
-class LogPopup(QtGui.QDialog):
+class LogPopup(QtWidgets.QDialog):
     def __init__(self, parent=None, text=""):
-        QtGui.QDialog.__init__(self, parent)
+        QtWidgets.QDialog.__init__(self, parent)
 
         self.resize(400, 300)
 
-        vbox = QtGui.QVBoxLayout()
-        self.textedit = QtGui.QTextEdit()
+        vbox = QtWidgets.QVBoxLayout()
+        self.textedit = QtWidgets.QTextEdit()
         self.textedit.setReadOnly(True)
         self.textedit.setFont(QtGui.QFont("mono", 10))
         self.textedit.setText(text)
-        quit_button = QtGui.QPushButton("OK")
+        quit_button = QtWidgets.QPushButton("OK")
         quit_button.clicked.connect(self.close)
         vbox.addWidget(self.textedit)
         vbox.addWidget(quit_button)
@@ -282,13 +282,13 @@ class LogPopup(QtGui.QDialog):
         self.setLayout(vbox)
         self.show()
 
-class InsertTextBoxPopup(QtGui.QDialog):
+class InsertTextBoxPopup(QtWidgets.QDialog):
     def __init__(self, parent=None, text=""):
-        QtGui.QDialog.__init__(self, parent)
+        QtWidgets.QDialog.__init__(self, parent)
 
         self.resize(400, 300)
 
-        vbox = QtGui.QVBoxLayout()
+        vbox = QtWidgets.QVBoxLayout()
         self.textedit = Qsci.QsciScintilla(None)
         self.textedit.setFont(QtGui.QFont("mono", 10))
         self.textedit.setEdgeMode(Qsci.QsciScintilla.EdgeLine)
@@ -297,10 +297,10 @@ class InsertTextBoxPopup(QtGui.QDialog):
         self.textedit.setText(text)
         self.textedit.cursorPositionChanged.connect(self.curPosChanged)
 
-        quit_button = QtGui.QPushButton("OK")
+        quit_button = QtWidgets.QPushButton("OK")
         quit_button.clicked.connect(self.ok)
 
-        self.label = QtGui.QLabel()
+        self.label = QtWidgets.QLabel()
 
         vbox.addWidget(self.textedit)
         vbox.addWidget(quit_button)
@@ -328,7 +328,7 @@ def main():
     parser.add_argument('file', nargs='?', help="Either a script or a ROM")
     parser.add_argument('offset', nargs='?', help="Needed if the file is a ROM image")
     args = parser.parse_args()
-    app = QtGui.QApplication(sys.argv)
+    app = QtWidgets.QApplication(sys.argv)
     win = Window()
     win.show()
     if args.file and not args.offset: # opening a script
