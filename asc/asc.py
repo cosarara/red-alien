@@ -41,6 +41,14 @@ OPERATORS = {"==": "1", "!=": "5", "<": "0", ">": "2",
 OPPOSITE_OPERATORS = {"==": "!=", "!=": "==", "<": ">=", ">": "<=",
                       "<=": ">", ">=": "<"}
 
+# windows builds are frozen
+if getattr(sys, 'frozen', False):
+    data_path = os.path.join(
+        os.path.dirname(sys.executable),
+        "asc", "data")
+else:
+    data_path = os.path.join(os.path.dirname(__file__), "data")
+
 QUIET = False
 VERBOSE = 0
 def debug(*args):
@@ -753,15 +761,8 @@ def nice_dbg_output(hex_scripts):
     return text
 
 def get_canvas():
-    if getattr(sys, 'frozen', False):
-        path = os.path.join(
-            os.path.dirname(sys.executable),
-            "asc", "data", "canvas.pks")
-        with open(path, encoding="utf8") as f:
-            text = f.read()
-    else:
-        data = pkgutil.get_data('asc', os.path.join('data', 'canvas.pks'))
-        text = data.decode("utf8")
+    with open(os.path.join(data_path, "canvas.pks"), encoding="utf8") as f:
+        text = f.read()
     return text
 
 def get_program_dir():
@@ -833,7 +834,8 @@ def main():
         except KeyError:
             pass
         include_path = (".", os.path.dirname(args.rom),
-                        os.path.dirname(args.script), get_program_dir())
+                        os.path.dirname(args.script), get_program_dir(),
+                        data_path)
         script = dirty_compile(script, include_path)
         vdebug(script)
         if args.command == "b" and args.compile_only:
