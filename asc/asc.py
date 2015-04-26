@@ -765,6 +765,15 @@ def get_canvas():
         text = f.read()
     return text
 
+def make_clean_script(hex_script):
+    text = "// cleaning script"
+    for addr, chunk in hex_script:
+        text += "\n#org {}\n".format(addr)
+        for _ in range(len(chunk)):
+            text += "#raw 0xFF\n"
+        #text += "="+"\\xFF"*len(chunk)+"\n"
+    return text
+
 def get_program_dir():
     try:
         return os.path.dirname(__file__)
@@ -791,6 +800,8 @@ def main():
                           help='Compile only, don\'t parse the ASM')
     parser_b.add_argument('--parse-only', action='store_true',
                           help='Parse only, don\'t assemble')
+    parser_b.add_argument('--clean', action='store_true',
+                          help='Produce a cleaning script')
     parser_b.set_defaults(command='b')
 
     parser_d = subparsers.add_parser('d', help='decompile')
@@ -849,6 +860,9 @@ def main():
         hex_script, log = assemble(script, args.rom)
         if args.command == "c":
             write_hex_script(hex_script, args.rom)
+        elif args.clean:
+            with open(args.script+".clean.pks", "w") as f:
+                f.write(make_clean_script(hex_script))
         else:
             debug("\nHex:")
             for addr, chunk in hex_script:
