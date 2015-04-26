@@ -791,6 +791,8 @@ def main():
     parser_c = subparsers.add_parser('c', help='compile')
     parser_c.add_argument('rom', help='path to ROM image')
     parser_c.add_argument('script', help='path to pokemon script')
+    parser_c.add_argument('--clean', action='store_true',
+                          help='Produce a cleaning script')
     parser_c.set_defaults(command='c')
 
     parser_b = subparsers.add_parser('b', help='debug')
@@ -858,11 +860,12 @@ def main():
             print(dyn)
             return
         hex_script, log = assemble(script, args.rom)
-        if args.command == "c":
-            write_hex_script(hex_script, args.rom)
-        elif args.clean:
+        if args.clean:
             with open(args.script+".clean.pks", "w") as f:
                 f.write(make_clean_script(hex_script))
+
+        if args.command == "c":
+            write_hex_script(hex_script, args.rom)
         else:
             debug("\nHex:")
             for addr, chunk in hex_script:
