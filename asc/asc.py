@@ -26,7 +26,6 @@ from . import pokecommands as pk
 from . import text_translate
 from pprint import pprint
 from .preprocessor import preprocess, remove_comments
-import pkgutil
 
 MAX_NOPS = 10
 USING_WINDOWS = (os.name == 'nt')
@@ -237,7 +236,8 @@ def compile_clike_blocks(text_script, level=0):
     text_script = text_script.strip("\n")
     return text_script
 
-def asm_parse(text_script, end_commands=("end", "softend")):
+def asm_parse(text_script, end_commands=("end", "softend"),
+        cmd_table=pk.pkcommands):
     ''' The basic language preparsing function '''
     list_script = text_script.split("\n")
     org_i = -1
@@ -257,13 +257,13 @@ def asm_parse(text_script, end_commands=("end", "softend")):
         command = words[0]
         args = words[1:]
 
-        if command not in pk.pkcommands:
+        if command not in cmd_table:
             error = ("ERROR: command not found in line " + str(num+1) + ":" +
                      "\n" + str(line))
             raise Exception(error)
         # if command has args
-        if "args" in pk.pkcommands[command]:
-            arg_num = len(pk.pkcommands[command]["args"][1])
+        if "args" in cmd_table[command]:
+            arg_num = len(cmd_table[command]["args"][1])
         else:
             arg_num = 0
 
@@ -273,7 +273,7 @@ def asm_parse(text_script, end_commands=("end", "softend")):
                      str(len(args)) + '\n' + "Context:\n")
             for line_num in range(num-3, num+6):
                 error += "    " + list_script[line_num] + "\n"
-            args = pk.pkcommands[command]['args']
+            args = cmd_table[command]['args']
             if args and args[0]:
                 error += "Args needed: " + args[0] + " " + str(args[1])
             raise Exception(error)
@@ -330,7 +330,7 @@ def asm_parse(text_script, end_commands=("end", "softend")):
             for i, arg in enumerate(args):
                 if arg[0] in (":", "@"):
                     continue
-                arg_len = pk.pkcommands[command]["args"][1][i]
+                arg_len = cmd_table[command]["args"][1][i]
                 if arg[:2] == "0x":
                     this_arg_len = len(arg[2:]) // 2
                 else:
@@ -409,7 +409,7 @@ def find_nth(text, string, n):
         n -= 1
     return start
 
-def make_bytecode(script_list):
+def make_bytecode(script_list, cmd_table=pk.pkcommands):
     ''' Compile parsed script list '''
     hex_scripts = []
     for script in script_list:
@@ -429,17 +429,17 @@ def make_bytecode(script_list):
             elif command[0] == ":":
                 labels.append([command, len(bytecode)])
             else:
-                hexcommand = pk.pkcommands[command]["hex"]
+                hexcommand = cmd_table[command]["hex"]
                 hexargs = bytearray()
                 for i, arg in enumerate(args):
                     if arg[0] != "@" and arg[0] != ":":
-                        arg_len = pk.pkcommands[command]["args"][1][i]
+                        arg_len = cmd_table[command]["args"][1][i]
                         if arg[0:2] != "0x":
                             arg = (int(arg) & 0xffffff)
                         else:
                             arg = int(arg, 16)
-                        if ("offset" in pk.pkcommands[command] and
-                                pk.pkcommands[command]["offset"][0] == i):
+                        if ("offset" in cmd_table[command] and
+                                cmd_table[command]["offset"][0] == i):
                             arg |= 0x8000000
                         try:
                             arg_bytes = arg.to_bytes(arg_len, "little")
@@ -451,8 +451,8 @@ def make_bytecode(script_list):
                                      "Arg: " + hex(arg) +
                                      "\nCommand: " + command)
                             raise Exception(error)
-                        if len(pk.pkcommands[command]["args"]) == 3:
-                            arg_bytes = (pk.pkcommands[command]["args"][2] +
+                        if len(cmd_table[command]["args"]) == 3:
+                            arg_bytes = (cmd_table[command]["args"][2] +
                                          arg_bytes)
                         hexargs += arg_bytes
                     else:
@@ -464,8 +464,8 @@ def make_bytecode(script_list):
                         # so we fill this with 00
                         arg = b"\x00\x00\x00\x08" # Dummy bytes, so we can
                                                   # size and then replace
-                        if len(pk.pkcommands[command]["args"]) == 3:
-                            arg = (pk.pkcommands[command]["args"][2] + arg)
+                        if len(cmd_table[command]["args"]) == 3:
+                            arg = (cmd_table[command]["args"][2] + arg)
                         hexargs += arg
                 bytecode += hexcommand.to_bytes(1, "little") + hexargs
 
@@ -549,7 +549,9 @@ def write_hex_script(hex_scripts, rom_file_name):
 
 
 def decompile(file_name, offset, type_="script", raw=False,
-              end_commands=END_COMMANDS, end_hex_commands=END_HEX_COMMANDS):
+              end_commands=END_COMMANDS, end_hex_commands=END_HEX_COMMANDS,
+              cmd_table=pk.pkcommands, dec_table=pk.dec_pkcommands,
+              verbose=False):
     # Preparem ROM text
     debug("'file name = " + file_name)
     debug("'address = " + hex(offset))
@@ -567,7 +569,10 @@ def decompile(file_name, offset, type_="script", raw=False,
                                                        offsets,
                                                        end_commands=end_commands,
                                                        end_hex_commands=end_hex_commands,
-                                                       raw=raw)
+                                                       raw=raw,
+                                                       cmd_table=cmd_table,
+                                                       dec_table=dec_table,
+                                                       verbose=verbose)
             textscript += ("#org " + hex(offset) + "\n" +
                            textscript_ + "\n")
             for new_offset in new_offsets:
@@ -599,7 +604,10 @@ def get_rom_offset(offset):
 
 def demake_bytecode(rombytes, offset, added_offsets,
                     end_commands=END_COMMANDS,
-                    end_hex_commands=END_HEX_COMMANDS, raw=False):
+                    end_hex_commands=END_HEX_COMMANDS, raw=False,
+                    cmd_table=pk.pkcommands,
+                    dec_table=pk.dec_pkcommands,
+                    verbose=False):
     rom_offset = get_rom_offset(offset)
     offsets = []
     hexscript = rombytes
@@ -612,18 +620,16 @@ def demake_bytecode(rombytes, offset, added_offsets,
     while (text_command not in end_commands and
            hex_command not in end_hex_commands):
         hex_command = hexscript[i]
-        if hex_command in pk.dec_pkcommands and not raw:
-            text_command = pk.dec_pkcommands[hex_command]
+        orig_i = i
+        if hex_command in dec_table and not raw:
+            text_command = dec_table[hex_command]
             textscript += text_command
             i += 1
-            command_data = pk.pkcommands[text_command]
-            if "args" in pk.pkcommands[text_command]:
+            command_data = cmd_table[text_command]
+            if "args" in command_data:
                 if len(command_data["args"]) == 3:
                     i += len(command_data["args"][2])
                 for n, arg_len in enumerate(command_data["args"][1]):
-                    # loop tantes vegades com arg's hi ha
-                    # afegir cada arg
-                    # 2 = el que ocupa la commanda
                     arg = hexscript[i:i + arg_len]
                     arg = int.from_bytes(arg, "little")
                     if "offset" in command_data:
@@ -648,6 +654,10 @@ def demake_bytecode(rombytes, offset, added_offsets,
                 break
         else:
             nop_count = 0
+        if verbose >= 1:
+            textscript += " //" + " ".join(hex(n)[2:].zfill(2) for n in hexscript[orig_i:i])
+            if verbose >= 2:
+                textscript += " -  " + hex(orig_i)
         textscript += "\n"
     return textscript, offsets
 
@@ -696,7 +706,7 @@ def open_script(file_name):
     script_text = script_text.replace("\r\n", "\n")
     return script_text
 
-def assemble(script, rom_file_name):
+def assemble(script, rom_file_name, cmd_table=pk.pkcommands):
     ''' Compiles a plain script and returns a tuple containing
         a list and a string. The string is the #dyn log.
         The list contains a list for every location where
@@ -704,10 +714,10 @@ def assemble(script, rom_file_name):
         elements each, the offset where data should be
         written and the data itself '''
     debug("parsing...")
-    parsed_script, dyn = asm_parse(script)
+    parsed_script, dyn = asm_parse(script, cmd_table=cmd_table)
     vpdebug(parsed_script)
     debug("compiling...")
-    hex_script = make_bytecode(parsed_script)
+    hex_script = make_bytecode(parsed_script, cmd_table=cmd_table)
     debug(hex_script)
     log = ''
     debug("doing dynamic and label things...")
@@ -726,9 +736,9 @@ def assemble(script, rom_file_name):
     script = put_addresses_labels(hex_script, script)
     vdebug(script)
 
-    parsed_script, dyn = asm_parse(script)
+    parsed_script, dyn = asm_parse(script, cmd_table=cmd_table)
     debug("recompiling")
-    hex_script = make_bytecode(parsed_script)
+    hex_script = make_bytecode(parsed_script, cmd_table=cmd_table)
     debug("yay!")
 
     # Remove the labels list, which will be empty and useless now
@@ -786,6 +796,8 @@ def main():
 
     parser.add_argument('--quiet', action='store_true', help='Be quiet')
     parser.add_argument('--verbose', '-v', action='count', help='Be verbose. Like, a lot')
+    parser.add_argument('--mode', default="event", type=str,
+            help='what kind of bytecode, default is map events (event)')
     subparsers = parser.add_subparsers(help='available commands:')
 
     parser_c = subparsers.add_parser('c', help='compile')
@@ -828,9 +840,15 @@ def main():
     parser_d.set_defaults(command='d')
 
     args = parser.parse_args()
-    if not "command" in args:
+    modes = {
+            "event": (pk.pkcommands, pk.dec_pkcommands),
+            #"battle": ,
+            "battle_ai": (pk.aicommands, pk.dec_aicommands),
+            }
+    if "command" not in args or args.mode not in modes:
         parser.print_help()
         sys.exit(1)
+    cmd_table, dec_table = modes[args.mode]
 
     global QUIET, MAX_NOPS, VERBOSE
     QUIET = args.quiet
@@ -855,11 +873,11 @@ def main():
             print(script)
             return
         elif args.command == "b" and args.parse_only:
-            parsed_script, dyn = asm_parse(script)
+            parsed_script, dyn = asm_parse(script, cmd_table=cmd_table)
             pprint(parsed_script)
             print(dyn)
             return
-        hex_script, log = assemble(script, args.rom)
+        hex_script, log = assemble(script, args.rom, cmd_table=cmd_table)
         if args.clean:
             with open(args.script+".clean.pks", "w") as f:
                 f.write(make_clean_script(hex_script))
@@ -884,7 +902,10 @@ def main():
         type_ = "text" if args.text else "script"
         print(decompile(args.rom, int(args.offset, 16), type_, raw=args.raw,
                         end_commands=END_COMMANDS,
-                        end_hex_commands=end_hex_commands))
+                        end_hex_commands=end_hex_commands,
+                        cmd_table=cmd_table,
+                        dec_table=dec_table,
+                        verbose=args.verbose))
 
 
 if __name__ == "__main__":

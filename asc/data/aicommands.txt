@@ -1,0 +1,151 @@
+#!/usr/bin/env python
+#This file is part of ASC.
+
+#    ASC is free software: you can redistribute it and/or modify
+#    it under the terms of the GNU General Public License as published by
+#    the Free Software Foundation, either version 3 of the License, or
+#    (at your option) any later version.
+
+#    ASC is distributed in the hope that it will be useful,
+#    but WITHOUT ANY WARRANTY; without even the implied warranty of
+#    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+#    GNU General Public License for more details.
+
+#    You should have received a copy of the GNU General Public License
+#    along with ASC.  If not, see <http://www.gnu.org/licenses/>.
+
+# This will be exec()ed by the python interpreter at runtime.
+
+# Documentation for writing this table was taken from
+# http://www.pokecommunity.com/showthread.php?p=8729896
+
+# Format:
+# {
+#        [[["<command_name>": {["hex":"<hex value>"],
+#                           ["args": ("<description>",
+#                            (<arg> [[[arg], arg], ...] ))]},
+#        ...], ...]}
+#
+
+({
+    # phony commands (commands without hex translation)
+    # - TODO: is this needed?
+    "#org": {"args": ("offset", (4,))},
+    "=": {"args": ("text", ("*",))},
+    "#dyn": {"args": ("offset", (4,))},
+    "#raw": {"args": ("hex byte", (1,))},
+    "if": {"args": ("comp, command, offset", (1, 1, 4))},
+    "softend": {}, # A likely useless end which doesn't compile to end
+
+    # Real commands
+    "random_goto__high_param_likely": {"hex": 0x00, "args": ("", ())},
+    "random_goto__low_param_likely": {"hex": 0x01, "args": ("", ())},
+    "random_goto__1_in_256_chance": {"hex": 0x02, "args": ("", ())},
+    "random_goto__255_in_256_chance": {"hex": 0x03, "args": ("", ())},
+
+    # (followed by the value that should be added FF=-1 FE=-2 …)
+    "viability_score": {"hex": 0x04, "args": ("num", (1,))},
+
+    "jump_if_health_percentage_lt": {"hex": 0x05, "args": ("player, val, address", (1, 1, 4))},
+    "jump_if_health_percentage_ge": {"hex": 0x06, "args": ("player, val, address", (1, 1, 4))},
+    "jump_if_health_percentage_eq": {"hex": 0x07, "args": ("player, val, address", (1, 1, 4))},
+    "jump_if_health_percentage_ne": {"hex": 0x08, "args": ("player, val, address", (1, 1, 4))},
+    "jump_if_any_status1_bit": {"hex": 0x09, "args": ("", ())},
+    "jump_if_no_status1_bit": {"hex": 0x0A, "args": ("", ())},
+    "jump_if_any_status2_bit": {"hex": 0x0B, "args": ("", ())},
+    "jump_if_no_status2_bit": {"hex": 0x0C, "args": ("", ())},
+    "jump_if_any_status3_bit": {"hex": 0x0D, "args": ("", ())},
+    "jump_if_no_status3_bit": {"hex": 0x0E, "args": ("", ())},
+    "jump_if_any_status4_bit": {"hex": 0x0F, "args": ("", ())},
+    "jump_if_no_status4_bit": {"hex": 0x10, "args": ("", ())},
+    "jump_if__8_lt_8": {"hex": 0x11, "args": ("", ())},
+    "jump_if__8_gt_8": {"hex": 0x12, "args": ("", ())},
+    "jump_if__8_eq_8": {"hex": 0x13, "args": ("", ())},
+    "jump_if__8_ne_8": {"hex": 0x14, "args": ("byte, address", (1, 4))},
+    "jump_if__8_lt_32": {"hex": 0x15, "args": ("", ())},
+    "jump_if__8_gt_32": {"hex": 0x16, "args": ("", ())},
+    "jump_if__8_eq_32": {"hex": 0x17, "args": ("", ())},
+    "jump_if__8_ne_32": {"hex": 0x18, "args": ("", ())},
+    "jump_if_move_id_eq_16": {"hex": 0x19, "args": ("moveid, address", (2, 4))},
+    "jump_if_move_id_ne_16": {"hex": 0x1A, "args": ("moveid, address", (2, 4))},
+    "jump_if__8_in_list_8": {"hex": 0x1B, "args": ("", ())},
+    "jump_if__8_not_in_list_8": {"hex": 0x1C, "args": ("", ())},
+    "jump_if__8_in_list_16": {"hex": 0x1D, "args": ("", ())},
+    "jump_if__8_not_in_list_16": {"hex": 0x1E, "args": ("", ())},
+    "jump_if_attacker_has_any_damaging_moves": {"hex": 0x1F, "args": ("", ())},
+    "jump_if_attacker_has_no_damaging_moves": {"hex": 0x20, "args": ("", ())},
+
+    "get_battle_turn_counter__8": {"hex": 0x21, "args": ("", ())},
+    "get_some_type": {"hex": 0x22, "args": ("", ())},
+    "move_get_power__2_8": {"hex": 0x23, "args": ("", ())},
+    "is_most_powerful_move__8": {"hex": 0x24, "args": ("", ())},
+    "get_move_to_execute_B": {"hex": 0x25, "args": ("", ())},
+
+    "jump_if__8_ne_2": {"hex": 0x26, "args": ("", ())},
+    "jump_if__8_eq_2": {"hex": 0x27, "args": ("", ())},
+    "jump_if_move_would_hit_first": {"hex": 0x28, "args": ("", ())},
+    "jump_if_move_would_hit_second": {"hex": 0x29, "args": ("", ())},
+
+    #"—": {"hex": 0x2A, "args": ("", ())},
+    #"—": {"hex": 0x2B, "args": ("", ())},
+
+    "count_alive_pokemon_on_team": {"hex": 0x2C, "args": ("", ())},
+    "get_move_id__8": {"hex": 0x2D, "args": ("", ())},
+    "move_get_move_script_id": {"hex": 0x2E, "args": ("", ())},
+    "get_ability": {"hex": 0x2F, "args": ("player", (1,))},
+    "simulate_damage_muliplier_four_times": {"hex": 0x30, "args": ("", ())},
+    "simulate_damage_bonus_jump_if_eq": {"hex": 0x31, "args": ("", ())},
+
+    #"—": {"hex": 0x32, "args": ("", ())},
+    #"—": {"hex": 0x33, "args": ("", ())},
+
+    "jump_if_any_party_member_has_status_ailment_32": {"hex": 0x34, "args": ("", ())},
+    "jump_if_no_party_member_has_status_ailment_32_BUGGED": {"hex": 0x35, "args": ("", ())},
+
+    "get_weather__8": {"hex": 0x36, "args": ("", ())},
+    "jump_if_move_id_eq_8": {"hex": 0x37, "args": ("", ())},
+    "jump_if_move_id_ne_8": {"hex": 0x38, "args": ("", ())},
+    "jump_if_stat_buff_lt": {"hex": 0x39, "args": ("", ())},
+    "jump_if_stat_buff_gt": {"hex": 0x3A, "args": ("", ())},
+    "jump_if_stat_buff_eq": {"hex": 0x3B, "args": ("", ())},
+    "jump_if_stat_buff_ne": {"hex": 0x3C, "args": ("", ())},
+    "determine_move_damage_jump_if_fatal": {"hex": 0x3D, "args": ("", ())},
+    "determine_move_damage_jump_if_not_fatal": {"hex": 0x3E, "args": ("", ())},
+    "jump_if_has_move": {"hex": 0x3F, "args": ("", ())},
+    "jump_if_hasnt_move": {"hex": 0x40, "args": ("", ())},
+    "jump_if_move_with_same_movescript_in_either_0_2_history_or_1_3_moveset": {"hex": 0x41, "args": ("", ())},
+    "jump_if_move_with_same_movescript_in_neither_0_2_history_nor_1_3_moveset": {"hex": 0x42, "args": ("", ())},
+    "is_moveset_restricted": {"hex": 0x43, "args": ("", ())},
+    "jump_if_or_if_not_current_move_in_encore": {"hex": 0x44, "args": ("", ())},
+    "f10_or_b1011": {"hex": 0x45, "args": ("", ())},
+    "jump_random_unknown": {"hex": 0x46, "args": ("", ())},
+    "f10_or_b1101": {"hex": 0x47, "args": ("", ())},
+    "get_held_item_x12__8": {"hex": 0x48, "args": ("", ())},
+    "pokemon_species_get_gender_info": {"hex": 0x49, "args": ("", ())},
+    "enter_battle_countdown_get_state": {"hex": 0x4A, "args": ("", ())},
+    "stockpile_get_num_uses": {"hex": 0x4B, "args": ("", ())},
+    "is_double_battle": {"hex": 0x4C, "args": ("", ())},
+    "get_dp08_item__8": {"hex": 0x4D, "args": ("", ())},
+    "move_get_type__8": {"hex": 0x4E, "args": ("", ())},
+    "move_get_power__8_8": {"hex": 0x4F, "args": ("", ())},
+    "move_get_move_script_id__8": {"hex": 0x50, "args": ("", ())},
+    "get_protect_endure_activity": {"hex": 0x51, "args": ("", ())},
+    #"—": {"hex": 0x52, "args": ("", ())},
+    #"—": {"hex": 0x53, "args": ("", ())},
+    #"—": {"hex": 0x54, "args": ("", ())},
+    #"—": {"hex": 0x55, "args": ("", ())},
+    #"—": {"hex": 0x56, "args": ("", ())},
+    #"—": {"hex": 0x57, "args": ("", ())},
+    "call": {"hex": 0x58, "args": ("", ())},
+    "jump": {"hex": 0x59, "args": ("", ())},
+    #"return_and_eventually_f10_or_b0001": {"hex": 0x5A, "args": ("", ())},
+    "end": {"hex": 0x5A, "args": ("", ())},
+    "compare_attacker_defender_levels": {"hex": 0x5B, "args": ("", ())},
+    "jump_if_taunt_turns_ne_0": {"hex": 0x5C, "args": ("", ())},
+    "jump_if_taunt_turns_eq_0": {"hex": 0x5D, "args": ("", ())},
+
+    },
+
+# Alias:normal_name
+{}
+)

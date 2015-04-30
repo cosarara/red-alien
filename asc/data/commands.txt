@@ -1,3 +1,4 @@
+#!/usr/bin/env python
 #This file is part of ASC.
 
 #    ASC is free software: you can redistribute it and/or modify
@@ -13,22 +14,21 @@
 #    You should have received a copy of the GNU General Public License
 #    along with ASC.  If not, see <http://www.gnu.org/licenses/>.
 
-# vim: filetype=python
-
 # This will be exec()ed by the python interpreter at runtime.
 
 # Documentation for writing this table was taken from Score_Under's
 # pokedef.h
 
 # Format:
-# pkcommands = {
+# {
 #        [[["<command_name>": {["hex":"<hex value>"],
 #                           ["args": ("<description>",
 #                            (<arg> [[[arg], arg], ...] ))]},
 #        ...], ...]}
 #
 
-pkcommands = {
+# Commands
+({
     # "fake" commands (commands without hex translation)
     "#org": {"args": ("offset", (4,))},
     "=": {"args": ("text", ("*",))},
@@ -274,10 +274,11 @@ pkcommands = {
     #"fb": {"hex": 0xfb, "args": ("addr", (4))},
     #"fe": {"hex": 0xfe, "args": ("?", (1,))},
 
-    }
+    },
 
-# Alias:normal_name
-aliases = {"waitmovement": "pauseevent",
+# Aliases
+# format:    Alias:normal_name
+{"waitmovement": "pauseevent",
            "givepokemon": "addpokemon",
            "giveitem": "additem",
            "wildbattle": "battle",
@@ -288,3 +289,5 @@ aliases = {"waitmovement": "pauseevent",
            "hidesprite": "disappear",
            "showsprite": "reappear",
            "nop": "nop0"}
+
+)
