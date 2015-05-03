@@ -22,15 +22,14 @@ import sys
 import os
 import pkgutil
 
+# windows builds are frozen
 if getattr(sys, 'frozen', False):
-    tablepath = os.path.join(
-        os.path.dirname(sys.executable),
-        "asc", "data", "pktext.tbl")
-    with open(tablepath, encoding="utf8") as tblfile:
-        table_str = tblfile.read().rstrip("\n")
+    data_path = os.path.join(os.path.dirname(sys.executable), "data")
 else:
-    data = pkgutil.get_data('asc', os.path.join('data', 'pktext.tbl'))
-    table_str = data.decode("utf8").rstrip("\n")
+    data_path = os.path.join(os.path.dirname(__file__), "data")
+
+with open(os.path.join(data_path, "pktext.tbl"), encoding="utf8") as f:
+    table_str = f.read().rstrip("\n")
 
 def read_table_encode(table_string=table_str):
     table = table_string.split("\n")

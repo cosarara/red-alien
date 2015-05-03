@@ -15,10 +15,11 @@ except:
         def __init__(self, a, base):
             pass
 
-data_files_cxfreeze = ['asc/data/', 'README', 'imageformats', 'stdlib']
-build_exe_options = {"packages": ["os", "PyQt4.QtSvg", "pkg_resources"],
+data_files_cxfreeze = ['asc/data/', 'README', 'imageformats', 'asc/data/stdlib']
+build_exe_options = {"packages": ["os", "PyQt5.QtSvg", "PyQt5.QtPrintSupport",
+                                  "pkg_resources"],
                      "include_files": data_files_cxfreeze,
-                     "includes": "PyQt4.QtCore",
+                     "includes": "PyQt5.QtCore",
                      "icon": "utils/asc.ico"}
 
 try:
@@ -39,9 +40,10 @@ setup(name='Blue Spider',
       author_email="cosarara97@gmail.com",
       url="https://github.com/cosarara97/red-alien",
       packages=['asc'],
-      package_data={'asc': ['data/*', 'data/stdlib/*']},
+      package_data={'asc': ['data/*.txt', 'data/*.tbl', 'data/*.png',
+          'data/*.pks', 'data/*.svg', 'data/stdlib/*']},
       scripts=['asc-qt', 'asc-cli'],
-      requires=['sip', 'PyQt4', 'Qsci'],
+      requires=['sip', 'PyQt5', 'Qsci'],
       options={"build_exe": build_exe_options},
       executables=[
           Executable("asc-qt", base=base),

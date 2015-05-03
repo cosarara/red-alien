@@ -23,9 +23,7 @@ import os
 def get_table_str(fn):
     # windows builds are frozen
     if getattr(sys, 'frozen', False):
-        data_path = os.path.join(
-            os.path.dirname(sys.executable),
-            "asc", "data")
+        data_path = os.path.join(os.path.dirname(sys.executable), "data")
     else:
         data_path = os.path.join(os.path.dirname(__file__), "data")
 

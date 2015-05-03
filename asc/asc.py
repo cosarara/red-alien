@@ -42,9 +42,7 @@ OPPOSITE_OPERATORS = {"==": "!=", "!=": "==", "<": ">=", ">": "<=",
 
 # windows builds are frozen
 if getattr(sys, 'frozen', False):
-    data_path = os.path.join(
-        os.path.dirname(sys.executable),
-        "asc", "data")
+    data_path = os.path.join(os.path.dirname(sys.executable), "data")
 else:
     data_path = os.path.join(os.path.dirname(__file__), "data")
 
@@ -585,7 +583,8 @@ def decompile(file_name, offset, type_="script", raw=False,
             lines = [text[i:i+80] for i in range(0, len(text), 80)]
             text = "".join([("= " + line + "\n") for line in lines])
             textscript += ("#org " + hex(offset) + "\n" + text)
-        if type_ == "movs":
+        # TODO: make them separate, nicer mov decomp
+        if type_ == "movs" or type_ == "raw":
             textscript_tmp = decompile_movs(rombytes, offset, raw=raw)
             textscript += ("#org " + hex(offset) + "\n" +
                            textscript_tmp + "\n")
