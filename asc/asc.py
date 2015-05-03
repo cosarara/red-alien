@@ -551,7 +551,7 @@ def write_hex_script(hex_scripts, rom_file_name):
 def decompile(file_name, offset, type_="script", raw=False,
               end_commands=END_COMMANDS, end_hex_commands=END_HEX_COMMANDS,
               cmd_table=pk.pkcommands, dec_table=pk.dec_pkcommands,
-              verbose=False):
+              verbose=0):
     # Preparem ROM text
     debug("'file name = " + file_name)
     debug("'address = " + hex(offset))
@@ -607,7 +607,7 @@ def demake_bytecode(rombytes, offset, added_offsets,
                     end_hex_commands=END_HEX_COMMANDS, raw=False,
                     cmd_table=pk.pkcommands,
                     dec_table=pk.dec_pkcommands,
-                    verbose=False):
+                    verbose=0):
     rom_offset = get_rom_offset(offset)
     offsets = []
     hexscript = rombytes
@@ -905,7 +905,7 @@ def main():
                         end_hex_commands=end_hex_commands,
                         cmd_table=cmd_table,
                         dec_table=dec_table,
-                        verbose=args.verbose))
+                        verbose=args.verbose if args.verbose is not None else 0))
 
 
 if __name__ == "__main__":
