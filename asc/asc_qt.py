@@ -174,7 +174,8 @@ class Window(QtWidgets.QMainWindow):
         script = str(self.ui.textEdit.text())
         script = script.replace("\r\n", "\n")
         include_path = (".", os.path.dirname(self.rom_file_name),
-                        os.path.dirname(self.file_name), asc.get_program_dir())
+                        os.path.dirname(self.file_name), asc.get_program_dir(),
+                        asc.data_path)
         try:
             script = asc.dirty_compile(script, include_path)
             parsed_script, dyn = asc.asm_parse(script)
