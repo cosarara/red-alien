@@ -17,7 +17,7 @@
 # This will be exec()ed by the python interpreter at runtime.
 
 # Documentation for writing this table was taken from
-# http://www.pokecommunity.com/showthread.php?p=8729896
+# http://www.pokecommunity.com/showthread.php?t=333767
 
 # Format:
 # {
@@ -26,6 +26,55 @@
 #                            (<arg> [[[arg], arg], ...] ))]},
 #        ...], ...]}
 #
+
+# Commands work like this:
+# Branches:
+#     [b][comparison][condition][suffix]
+#         compare:
+#             ra    random value to byte
+#             hp    health percentage to percentage
+#             s_    if status(1/2/3/4/ailment) bits in word are set
+#             vb    var to byte
+#             vw    var to word
+#             mi    move id to halfword
+#             lb    var to list of bytes
+#             lh    var to list of halfwords
+#             dm    if has any damaging moves
+#             ml    if would move last
+#             mu    damage multiplier to byte
+#             ms    move script to byte
+#             ss    stage of a stat to byte
+#             df    if damage is fatal
+#             hm    if has move 0xAA
+#             hs    if has move with movescript 0xBBBB
+#             sr    if any move in moveset is restricted by disable or encore
+#             mr    if current move is restricted by disable or encore
+#             sa    if safari anger is high enough
+#             ll    if has lowest level
+#             ta    if taunt is in effect
+#         conditions:
+#             eq    equal/true
+#             ne    unequal/false    (yes, I know equal it would actually be the other way around, but this is easier to use)
+#             lo    lower than
+#             hi    higher than
+#         suffixes:
+#             2     duplicate
+#             b     bugged
+#         special branches:
+#             b     always branch, jump
+#             bl    branch with link, call
+# Enders:
+#     [e][way of ending]
+#         ways:
+#             ef     end script and flee
+#             ew     end script and watch carefully
+#             e      simple end; can return if used after a bl/call
+# Setters:
+#     [s][parameter]
+#         parameters:
+#             sv    set move viability to +/-x
+# Getters:
+#     [g][parameter]
 
 ({
     # phony commands (commands without hex translation)
@@ -38,114 +87,178 @@
     "softend": {}, # A likely useless end which doesn't compile to end
 
     # Real commands
-    "random_goto__high_param_likely": {"hex": 0x00, "args": ("", ())},
-    "random_goto__low_param_likely": {"hex": 0x01, "args": ("", ())},
-    "random_goto__1_in_256_chance": {"hex": 0x02, "args": ("", ())},
-    "random_goto__255_in_256_chance": {"hex": 0x03, "args": ("", ())},
+    "bralo": {"hex": 0x00, "args": ("value, address", (1, 4)),
+              "offset": [(1, "script")]},
+    "brahi": {"hex": 0x01, "args": ("value, address", (1, 4)),
+              "offset": [(1, "script")]},
+    "braeq": {"hex": 0x02, "args": ("value, address", (1, 4)),
+              "offset": [(1, "script")]},
+    "brane": {"hex": 0x03, "args": ("value, address", (1, 4)),
+              "offset": [(1, "script")]},
 
     # (followed by the value that should be added FF=-1 FE=-2 …)
-    "viability_score": {"hex": 0x04, "args": ("num", (1,))},
+    "sv": {"hex": 0x04, "args": ("num", (1,))},
 
-    "jump_if_health_percentage_lt": {"hex": 0x05, "args": ("player, val, address", (1, 1, 4))},
-    "jump_if_health_percentage_ge": {"hex": 0x06, "args": ("player, val, address", (1, 1, 4))},
-    "jump_if_health_percentage_eq": {"hex": 0x07, "args": ("player, val, address", (1, 1, 4))},
-    "jump_if_health_percentage_ne": {"hex": 0x08, "args": ("player, val, address", (1, 1, 4))},
-    "jump_if_any_status1_bit": {"hex": 0x09, "args": ("", ())},
-    "jump_if_no_status1_bit": {"hex": 0x0A, "args": ("", ())},
-    "jump_if_any_status2_bit": {"hex": 0x0B, "args": ("", ())},
-    "jump_if_no_status2_bit": {"hex": 0x0C, "args": ("", ())},
-    "jump_if_any_status3_bit": {"hex": 0x0D, "args": ("", ())},
-    "jump_if_no_status3_bit": {"hex": 0x0E, "args": ("", ())},
-    "jump_if_any_status4_bit": {"hex": 0x0F, "args": ("", ())},
-    "jump_if_no_status4_bit": {"hex": 0x10, "args": ("", ())},
-    "jump_if__8_lt_8": {"hex": 0x11, "args": ("", ())},
-    "jump_if__8_gt_8": {"hex": 0x12, "args": ("", ())},
-    "jump_if__8_eq_8": {"hex": 0x13, "args": ("", ())},
-    "jump_if__8_ne_8": {"hex": 0x14, "args": ("byte, address", (1, 4))},
-    "jump_if__8_lt_32": {"hex": 0x15, "args": ("", ())},
-    "jump_if__8_gt_32": {"hex": 0x16, "args": ("", ())},
-    "jump_if__8_eq_32": {"hex": 0x17, "args": ("", ())},
-    "jump_if__8_ne_32": {"hex": 0x18, "args": ("", ())},
-    "jump_if_move_id_eq_16": {"hex": 0x19, "args": ("moveid, address", (2, 4))},
-    "jump_if_move_id_ne_16": {"hex": 0x1A, "args": ("moveid, address", (2, 4))},
-    "jump_if__8_in_list_8": {"hex": 0x1B, "args": ("", ())},
-    "jump_if__8_not_in_list_8": {"hex": 0x1C, "args": ("", ())},
-    "jump_if__8_in_list_16": {"hex": 0x1D, "args": ("", ())},
-    "jump_if__8_not_in_list_16": {"hex": 0x1E, "args": ("", ())},
-    "jump_if_attacker_has_any_damaging_moves": {"hex": 0x1F, "args": ("", ())},
-    "jump_if_attacker_has_no_damaging_moves": {"hex": 0x20, "args": ("", ())},
+    "bhplo": {"hex": 0x05, "args": ("side, percentage, address", (1, 1, 4)),
+              "offset": [(2, "script")]},
+    "bhphi": {"hex": 0x06, "args": ("side, percentage, address", (1, 1, 4)),
+              "offset": [(2, "script")]},
+    "bhpeq": {"hex": 0x07, "args": ("side, percentage, address", (1, 1, 4)),
+              "offset": [(2, "script")]},
+    "bhpne": {"hex": 0x08, "args": ("side, percentage, address", (1, 1, 4)),
+              "offset": [(2, "script")]},
+    "bs1eq": {"hex": 0x09, "args": ("side, bits, address", (1, 4, 4)),
+              "offset": [(2, "script")]},
+    "bs1ne": {"hex": 0x0A, "args": ("side, bits, address", (1, 4, 4)),
+              "offset": [(2, "script")]},
+    "bs2eq": {"hex": 0x0B, "args": ("side, bits, address", (1, 4, 4)),
+              "offset": [(2, "script")]},
+    "bs2ne": {"hex": 0x0C, "args": ("side, bits, address", (1, 4, 4)),
+              "offset": [(2, "script")]},
+    "bs3eq": {"hex": 0x0D, "args": ("side, bits, address", (1, 4, 4)),
+              "offset": [(2, "script")]},
+    "bs3ne": {"hex": 0x0E, "args": ("side, bits, address", (1, 4, 4)),
+              "offset": [(2, "script")]},
+    "bs4eq": {"hex": 0x0F, "args": ("side, bits, address", (1, 4, 4)),
+              "offset": [(2, "script")]},
+    "bs4ne": {"hex": 0x10, "args": ("side, bits, address", (1, 4, 4)),
+              "offset": [(2, "script")]},
+    "bvblo": {"hex": 0x11, "args": ("byte, address", (1, 4)),
+              "offset": [(1, "script")]},
+    "bvbhi": {"hex": 0x12, "args": ("byte, address", (1, 4)),
+              "offset": [(1, "script")]},
+    "bvbeq": {"hex": 0x13, "args": ("byte, address", (1, 4)),
+              "offset": [(1, "script")]},
+    "bvbne": {"hex": 0x14, "args": ("byte, address", (1, 4)),
+              "offset": [(1, "script")]},
+    "bvwlo": {"hex": 0x15, "args": ("word, address", (1, 4)),
+              "offset": [(1, "script")]},
+    "bvwhi": {"hex": 0x16, "args": ("word, address", (1, 4)),
+              "offset": [(1, "script")]},
+    "bvweq": {"hex": 0x17, "args": ("word, address", (1, 4)),
+              "offset": [(1, "script")]},
+    "bvwne": {"hex": 0x18, "args": ("word, address", (1, 4)),
+              "offset": [(1, "script")]},
+    "bmieq": {"hex": 0x19, "args": ("moveid, address", (2, 4)),
+              "offset": [(1, "script")]},
+    "bmine": {"hex": 0x1A, "args": ("moveid, address", (2, 4)),
+              "offset": [(1, "script")]},
+    "blbeq": {"hex": 0x1B, "args": ("addr_list, addr_dst", (4, 4)),
+              "offset": [(0, "raw_h"), (1, "script")]},
+    "blbne": {"hex": 0x1C, "args": ("addr_list, addr_dst", (4, 4)),
+              "offset": [(0, "raw_h"), (1, "script")]},
+    "blheq": {"hex": 0x1D, "args": ("addr_list, addr_dst", (4, 4)),
+              "offset": [(0, "raw_h"), (1, "script")]},
+    "blhne": {"hex": 0x1E, "args": ("addr_list, addr_dst", (4, 4)),
+              "offset": [(0, "raw_h"), (1, "script")]},
+    "bdmeq": {"hex": 0x1F, "args": ("address", (4,))},
+    "bdmne": {"hex": 0x20, "args": ("address", (4,))},
 
-    "get_battle_turn_counter__8": {"hex": 0x21, "args": ("", ())},
-    "get_some_type": {"hex": 0x22, "args": ("", ())},
-    "move_get_power__2_8": {"hex": 0x23, "args": ("", ())},
-    "is_most_powerful_move__8": {"hex": 0x24, "args": ("", ())},
-    "get_move_to_execute_B": {"hex": 0x25, "args": ("", ())},
+    "getturncounter": {"hex": 0x21},
+    "gettype": {"hex": 0x22, "args": ("typeof", (1,))},
+    "getcurrentmovepower": {"hex": 0x23},
+    "getmoverate": {"hex": 0x24},
+    "getmovequeue": {"hex": 0x25, "args": ("side", (1,))},
 
-    "jump_if__8_ne_2": {"hex": 0x26, "args": ("", ())},
-    "jump_if__8_eq_2": {"hex": 0x27, "args": ("", ())},
-    "jump_if_move_would_hit_first": {"hex": 0x28, "args": ("", ())},
-    "jump_if_move_would_hit_second": {"hex": 0x29, "args": ("", ())},
+    "bvbeq2": {"hex": 0x26, "args": ("byte, address", (1, 4)),
+              "offset": [(1, "script")]},
+    "bvbne2": {"hex": 0x27, "args": ("byte, address", (1, 4)),
+              "offset": [(1, "script")]},
+    "bmleq": {"hex": 0x28, "args": ("side, address", (1, 4)),
+              "offset": [(1, "script")]},
+    "bmlne": {"hex": 0x29, "args": ("side, address", (1, 4)),
+              "offset": [(1, "script")]},
 
-    #"—": {"hex": 0x2A, "args": ("", ())},
-    #"—": {"hex": 0x2B, "args": ("", ())},
+    #"—": {"hex": 0x2A},
+    #"—": {"hex": 0x2B},
 
-    "count_alive_pokemon_on_team": {"hex": 0x2C, "args": ("", ())},
-    "get_move_id__8": {"hex": 0x2D, "args": ("", ())},
-    "move_get_move_script_id": {"hex": 0x2E, "args": ("", ())},
-    "get_ability": {"hex": 0x2F, "args": ("player", (1,))},
-    "simulate_damage_muliplier_four_times": {"hex": 0x30, "args": ("", ())},
-    "simulate_damage_bonus_jump_if_eq": {"hex": 0x31, "args": ("", ())},
+    "getothers": {"hex": 0x2C, "args": ("side", (1,))},
+    "getmoveid": {"hex": 0x2D},
+    "getmovescript": {"hex": 0x2E},
+    "getability": {"hex": 0x2F, "args": ("side", (1,))},
+    "getmaxmultiplier": {"hex": 0x30},
+    "bmueq": {"hex": 0x31, "args": ("multiplier, address", (1, 4)),
+              "offset": [(1, "script")]},
 
-    #"—": {"hex": 0x32, "args": ("", ())},
-    #"—": {"hex": 0x33, "args": ("", ())},
+    #"—": {"hex": 0x32},
+    #"—": {"hex": 0x33},
 
-    "jump_if_any_party_member_has_status_ailment_32": {"hex": 0x34, "args": ("", ())},
-    "jump_if_no_party_member_has_status_ailment_32_BUGGED": {"hex": 0x35, "args": ("", ())},
+    "bsaeq": {"hex": 0x34, "args": ("side, ailment, address", (1, 4, 4)),
+              "offset": [(2, "script")]},
+    "bsaneb": {"hex": 0x35, "args": ("side, ailment, address", (1, 4, 4)),
+              "offset": [(2, "script")]},
 
-    "get_weather__8": {"hex": 0x36, "args": ("", ())},
-    "jump_if_move_id_eq_8": {"hex": 0x37, "args": ("", ())},
-    "jump_if_move_id_ne_8": {"hex": 0x38, "args": ("", ())},
-    "jump_if_stat_buff_lt": {"hex": 0x39, "args": ("", ())},
-    "jump_if_stat_buff_gt": {"hex": 0x3A, "args": ("", ())},
-    "jump_if_stat_buff_eq": {"hex": 0x3B, "args": ("", ())},
-    "jump_if_stat_buff_ne": {"hex": 0x3C, "args": ("", ())},
-    "determine_move_damage_jump_if_fatal": {"hex": 0x3D, "args": ("", ())},
-    "determine_move_damage_jump_if_not_fatal": {"hex": 0x3E, "args": ("", ())},
-    "jump_if_has_move": {"hex": 0x3F, "args": ("", ())},
-    "jump_if_hasnt_move": {"hex": 0x40, "args": ("", ())},
-    "jump_if_move_with_same_movescript_in_either_0_2_history_or_1_3_moveset": {"hex": 0x41, "args": ("", ())},
-    "jump_if_move_with_same_movescript_in_neither_0_2_history_nor_1_3_moveset": {"hex": 0x42, "args": ("", ())},
-    "is_moveset_restricted": {"hex": 0x43, "args": ("", ())},
-    "jump_if_or_if_not_current_move_in_encore": {"hex": 0x44, "args": ("", ())},
-    "f10_or_b1011": {"hex": 0x45, "args": ("", ())},
-    "jump_random_unknown": {"hex": 0x46, "args": ("", ())},
-    "f10_or_b1101": {"hex": 0x47, "args": ("", ())},
-    "get_held_item_x12__8": {"hex": 0x48, "args": ("", ())},
-    "pokemon_species_get_gender_info": {"hex": 0x49, "args": ("", ())},
-    "enter_battle_countdown_get_state": {"hex": 0x4A, "args": ("", ())},
-    "stockpile_get_num_uses": {"hex": 0x4B, "args": ("", ())},
-    "is_double_battle": {"hex": 0x4C, "args": ("", ())},
-    "get_dp08_item__8": {"hex": 0x4D, "args": ("", ())},
-    "move_get_type__8": {"hex": 0x4E, "args": ("", ())},
-    "move_get_power__8_8": {"hex": 0x4F, "args": ("", ())},
-    "move_get_move_script_id__8": {"hex": 0x50, "args": ("", ())},
-    "get_protect_endure_activity": {"hex": 0x51, "args": ("", ())},
-    #"—": {"hex": 0x52, "args": ("", ())},
-    #"—": {"hex": 0x53, "args": ("", ())},
-    #"—": {"hex": 0x54, "args": ("", ())},
-    #"—": {"hex": 0x55, "args": ("", ())},
-    #"—": {"hex": 0x56, "args": ("", ())},
-    #"—": {"hex": 0x57, "args": ("", ())},
-    "call": {"hex": 0x58, "args": ("", ())},
-    "jump": {"hex": 0x59, "args": ("", ())},
-    #"return_and_eventually_f10_or_b0001": {"hex": 0x5A, "args": ("", ())},
-    "end": {"hex": 0x5A, "args": ("", ())},
-    "compare_attacker_defender_levels": {"hex": 0x5B, "args": ("", ())},
-    "jump_if_taunt_turns_ne_0": {"hex": 0x5C, "args": ("", ())},
-    "jump_if_taunt_turns_eq_0": {"hex": 0x5D, "args": ("", ())},
+    "getweather": {"hex": 0x36},
+
+    "bmsne": {"hex": 0x37, "args": ("movescriptid, address", (1, 4)),
+              "offset": [(1, "script")]},
+    "bmseq": {"hex": 0x38, "args": ("movescriptid, address", (1, 4)),
+              "offset": [(1, "script")]},
+    "bsslo": {"hex": 0x39, "args": ("side, stat, stage, address", (1, 1, 1, 4)),
+              "offset": [(3, "script")]},
+    "bsshi": {"hex": 0x3A, "args": ("side, stat, stage, address", (1, 1, 1, 4)),
+              "offset": [(3, "script")]},
+    "bsseq": {"hex": 0x3B, "args": ("side, stat, stage, address", (1, 1, 1, 4)),
+              "offset": [(3, "script")]},
+    "bssne": {"hex": 0x3C, "args": ("side, stat, stage, address", (1, 1, 1, 4)),
+              "offset": [(3, "script")]},
+    "bdfeq": {"hex": 0x3D, "args": ("address", (4,)),
+              "offset": [(0, "script")]},
+    "bdfne": {"hex": 0x3E, "args": ("address", (4,)),
+              "offset": [(0, "script")]},
+    "bhmeqb": {"hex": 0x3F, "args": ("side, moveid, address", (1, 1, 4)),
+              "offset": [(2, "script")]},
+    "bhmneb": {"hex": 0x40, "args": ("side, moveid, address", (1, 1, 4)),
+              "offset": [(2, "script")]},
+    "bhseq": {"hex": 0x41, "args": ("side, movescript, address", (1, 1, 4)),
+              "offset": [(2, "script")]},
+    "bhsne": {"hex": 0x42, "args": ("side, movescript, address", (1, 1, 4)),
+              "offset": [(2, "script")]},
+    "bsreq": {"hex": 0x43, "args": ("side, disableorencore, address", (1, 1, 4))},
+    "bmreq": {"hex": 0x44, "args": ("disableorencore, address", (1, 4)),
+              "offset": [(1, "script")]},
+
+    "ef": {"hex": 0x45},
+    "bsaeq": {"hex": 0x46, "args": ("address", (4,))},
+    "ew": {"hex": 0x47},
+
+    "getholdeffect": {"hex": 0x48, "args": ("side", (1,))},
+    "getgender": {"hex": 0x49, "args": ("side", (1,))},
+    "getturnsinfield": {"hex": 0x4A, "args": ("side", (1,))},
+    "getstockpile": {"hex": 0x4B, "args": ("side", (1,))},
+    "getdoublebattle": {"hex": 0x4C},
+    "getitem": {"hex": 0x4D, "args": ("side", (1,))},
+    "gettype2": {"hex": 0x4E},
+    "getvarmovepower": {"hex": 0x4F},
+    "getmovescript": {"hex": 0x50},
+    "getprotection": {"hex": 0x51, "args": ("side", (1,))},
+    #"—": {"hex": 0x52},
+    #"—": {"hex": 0x53},
+    #"—": {"hex": 0x54},
+    #"—": {"hex": 0x55},
+    #"—": {"hex": 0x56},
+    #"—": {"hex": 0x57},
+    "bl": {"hex": 0x58, "args": ("address", (4,)),
+              "offset": [(0, "script")]},
+    "b": {"hex": 0x59, "args": ("address", (4,)),
+              "offset": [(0, "script")]},
+    "e": {"hex": 0x5A},
+    "blleq": {"hex": 0x5B, "args": ("side, address", (1, 4)),
+              "offset": [(1, "script")]},
+    "btaeq": {"hex": 0x5C, "args": ("address", (4,)),
+              "offset": [(0, "script")]},
+    "btane": {"hex": 0x5D, "args": ("address", (4,)),
+              "offset": [(0, "script")]},
 
     },
 
 # Alias:normal_name
-{}
+ {},
+ # ends:
+ [
+     "ef",
+     "ew",
+     "b",
+     "e",
+ ]
 )

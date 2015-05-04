@@ -436,9 +436,10 @@ def make_bytecode(script_list, cmd_table=pk.pkcommands):
                             arg = (int(arg) & 0xffffff)
                         else:
                             arg = int(arg, 16)
-                        if ("offset" in cmd_table[command] and
-                                cmd_table[command]["offset"][0] == i):
-                            arg |= 0x8000000
+                        if "offset" in cmd_table[command]:
+                            for o in cmd_table[command]["offset"]:
+                                if o[0] == i:
+                                    arg |= 0x8000000
                         try:
                             arg_bytes = arg.to_bytes(arg_len, "little")
                         except OverflowError:
@@ -632,18 +633,14 @@ def demake_bytecode(rombytes, offset, added_offsets,
                     arg = hexscript[i:i + arg_len]
                     arg = int.from_bytes(arg, "little")
                     if "offset" in command_data:
-                        if command_data["offset"][0] == n:
-                            offset_to_add = arg
-                            offset_to_add_type = command_data["offset"][1]
-                            # lol, a list
-                            tuple_to_add = [offset_to_add, offset_to_add_type]
-                            if tuple_to_add not in added_offsets:
-                                offsets.append(tuple_to_add)
+                        for o_arg_n, o_type in command_data["offset"]:
+                            if o_arg_n == n:
+                                tuple_to_add = [arg, o_type]
+                                if tuple_to_add not in added_offsets+offsets:
+                                    offsets.append(tuple_to_add)
                     textscript += " " + hex(arg)
                     i += arg_len
-                    # i sumar a i (index)
         else:
-            text_command = "#raw"
             textscript += "#raw " + hex(hex_command)
             i += 1
         if hex_command == 0:
@@ -653,14 +650,56 @@ def demake_bytecode(rombytes, offset, added_offsets,
                 break
         else:
             nop_count = 0
+
         if verbose >= 1:
             textscript += " //" + " ".join(hex(n)[2:].zfill(2) for n in hexscript[orig_i:i])
             if verbose >= 2:
                 textscript += " -  " + hex(orig_i)
         textscript += "\n"
+
+    #print(textscript)
+    #print("offsets")
+    #for o, type in offsets:
+    #    print(hex(o), type)
+    #print(offsets)
+
     return textscript, offsets
 
+def decompile_rawh(romtext, offset, end_hex_commands=[0xFF], raw=False):
+    rom_offset = get_rom_offset(offset)
+    vdebug(offset)
+    hexscript = romtext
+    i = rom_offset
+    textscript = ""
+    hex_command = ""
+    while hex_command not in end_hex_commands:
+        try:
+            hex_command = hexscript[i]
+        except IndexError:
+            break
+        textscript += "#raw " + hex(hex_command)
+        i += 1
+        textscript += "\n"
+    return textscript
 
+def decompile_rawb(romtext, offset, end_hex_commands=[0xFF], raw=False):
+    rom_offset = get_rom_offset(offset)
+    vdebug(offset)
+    hexscript = romtext
+    i = rom_offset
+    textscript = ""
+    hex_command = ""
+    while hex_command not in end_hex_commands:
+        try:
+            hex_command = hexscript[i]
+        except IndexError:
+            break
+        textscript += "#raw " + hex(hex_command)
+        i += 1
+        textscript += "\n"
+    return textscript
+
+# TODO: use nice define'd thingies
 def decompile_movs(romtext, offset, end_hex_commands=[0xFE, 0xFF], raw=False):
     rom_offset = get_rom_offset(offset)
     vdebug(offset)
@@ -840,14 +879,14 @@ def main():
 
     args = parser.parse_args()
     modes = {
-            "event": (pk.pkcommands, pk.dec_pkcommands),
+            "event": (pk.pkcommands, pk.dec_pkcommands, pk.end_pkcommands),
             #"battle": ,
-            "battle_ai": (pk.aicommands, pk.dec_aicommands),
+            "battle_ai": (pk.aicommands, pk.dec_aicommands, pk.end_aicommands),
             }
     if "command" not in args or args.mode not in modes:
         parser.print_help()
         sys.exit(1)
-    cmd_table, dec_table = modes[args.mode]
+    cmd_table, dec_table, end_cmds = modes[args.mode]
 
     global QUIET, MAX_NOPS, VERBOSE
     QUIET = args.quiet
@@ -899,11 +938,12 @@ def main():
         print("'" + '-'*20)
         end_hex_commands = [] if args.continue_on_0xFF else END_HEX_COMMANDS
         type_ = "text" if args.text else "script"
+        print(end_cmds)
         print(decompile(args.rom, int(args.offset, 16), type_, raw=args.raw,
-                        end_commands=END_COMMANDS,
                         end_hex_commands=end_hex_commands,
                         cmd_table=cmd_table,
                         dec_table=dec_table,
+                        end_commands=end_cmds,
                         verbose=args.verbose if args.verbose is not None else 0))
 
 

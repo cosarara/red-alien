@@ -42,13 +42,13 @@
     "end": {"hex": 0x02},
     "return": {"hex": 0x03},
     "call": {"hex": 0x04, "args": ("adress", (4,)),
-               "offset": (0, "script")},
+             "offset": [(0, "script")]},
     "jump": {"hex": 0x05, "args": ("adress", (4,)),
-               "offset": (0, "script")},
+             "offset": [(0, "script")]},
     "jumpif": {"hex": 0x06, "args": ("ops, adress", (1, 4)),
-               "offset": (1, "script")},
+               "offset": [(1, "script")]},
     "callif": {"hex": 0x07, "args": ("ops, adress", (1, 4)),
-               "offset": (1, "script")},
+               "offset": [(1, "script")]},
     "jumpstd": {"hex": 0x08, "args": ("type", (1,))},
     "callstd": {"hex": 0x09, "args": ("type", (1,))},
     "jumpstdif": {"hex": 0x0A, "args": ("ops, type", (1, 1))},
@@ -57,7 +57,7 @@
     "killscript": {"hex": 0x0E},
     "setbyte": {"hex": 0x0D, "args": ("byte", (1,))},
     "loadpointer": {"hex": 0x0F, "args": ("offset", (4,), b"\x00"),
-               "offset": (0, "text")},
+                    "offset": [(0, "text")]},
     "setbyte2": {"hex": 0x10, "args": ("bank, byte", (1, 1))},
     "writebytetooffset": {"hex": 0x11, "args": ("byte, adress", (1, 4))},
     "loadbytefrompointer": {"hex": 0x12, "args": ("byte, adress", (1, 4))},
@@ -124,13 +124,12 @@
     "takefurniture": {"hex": 0x4C, "args": ("type", (2,))},
     "checkifroomforfurniture": {"hex": 0x4D, "args": ("type", (2,))},
     "checkfurniture": {"hex": 0x4E, "args": ("type", (2,))},
-    "applymovement": {"hex": 0x4F, "args": ("minisprite, offset",
-                                            (2, 4)),
-                      "offset": (1, "movs")},
+    "applymovement": {"hex": 0x4F, "args": ("minisprite, offset", (2, 4)),
+                      "offset": [(1, "movs")]},
     "applymovementfinishat": {"hex": 0x50, "args": ("minisprite, offset"
                                                     "x, y",
                                                     (2, 4, 1, 1)),
-                              "offset": (1, "movs")},
+                              "offset": [(1, "movs")]},
     "pauseevent": {"hex": 0x51, "args": ("minisprite", (2,))},
     # ?
     "disappear": {"hex": 0x53, "args": ("minisprite", (2,))},
@@ -288,6 +287,7 @@
            "msgbox": "loadpointer",
            "hidesprite": "disappear",
            "showsprite": "reappear",
-           "nop": "nop0"}
-
+           "nop": "nop0"},
+# ends
+["end", "jump", "return"]
 )

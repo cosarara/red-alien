@@ -45,7 +45,7 @@ def make_tables(fn):
     aliases = {}
     # They will both get redefined in this exec
     #exec(get_table_str(fn))
-    pkcommands, aliases = eval(get_table_str(fn))
+    pkcommands, aliases, end_cmds = eval(get_table_str(fn))
 
     dec_pkcommands = dec_table(pkcommands)
 
@@ -56,7 +56,7 @@ def make_tables(fn):
         pkcommands_and_aliases[alias] = pkcommands[normal_name]
 
     pkcommands = pkcommands_and_aliases
-    return pkcommands, dec_pkcommands
-pkcommands, dec_pkcommands = make_tables("commands.txt")
-aicommands, dec_aicommands = make_tables("aicommands.txt")
+    return pkcommands, dec_pkcommands, end_cmds
+pkcommands, dec_pkcommands, end_pkcommands = make_tables("commands.txt")
+aicommands, dec_aicommands, end_aicommands = make_tables("aicommands.txt")
 
