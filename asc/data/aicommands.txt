@@ -67,7 +67,7 @@
 #     [e][way of ending]
 #         possibilities:
 #             ef     end script and flee
-#             ew     end script and watch carefully
+#             es     end script and display safari message
 #             e      simple end; can return if used after a bl/call
 # Setters:
 #     [s][parameter]
@@ -220,7 +220,7 @@
 
     "ef": {"hex": 0x45},
     "bsfeq": {"hex": 0x46, "args": ("address", (4,))},
-    "ew": {"hex": 0x47},
+    "es": {"hex": 0x47},
 
     "getholdeffect": {"hex": 0x48, "args": ("side", (1,))},
     "getgender": {"hex": 0x49, "args": ("side", (1,))},
