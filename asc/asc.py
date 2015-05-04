@@ -656,6 +656,9 @@ def demake_bytecode(rombytes, offset, added_offsets,
             if verbose >= 2:
                 textscript += " -  " + hex(orig_i)
         textscript += "\n"
+        if i - rom_offset > 10000:
+            textscript += "' This is getting too big, I'll stop"
+            break
 
     #print(textscript)
     #print("offsets")

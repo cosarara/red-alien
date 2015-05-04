@@ -31,6 +31,19 @@ class Window(QtWidgets.QMainWindow):
                        QtGui.QIcon.Normal, QtGui.QIcon.Off)
         self.setWindowIcon(icon)
 
+        # Script mode selector
+        self.ui.modeGroup = QtWidgets.QActionGroup(self)
+        self.ui.actionModeOW = QtWidgets.QAction("OW Script Mode", self)
+        self.ui.actionModeOW.setCheckable(True)
+        self.ui.actionModeAI = QtWidgets.QAction("AI Script Mode", self)
+        self.ui.actionModeAI.setCheckable(True)
+        self.ui.menuSettings.addAction(self.ui.actionModeOW)
+        self.ui.menuSettings.addAction(self.ui.actionModeAI)
+        self.ui.modeGroup.addAction(self.ui.actionModeOW)
+        self.ui.modeGroup.addAction(self.ui.actionModeAI)
+        self.ui.actionModeOW.setChecked(True)
+        self.mode = "ow"
+
         cons = ((self.ui.actionOpen, self.load_file),
                 (self.ui.actionNew, self.new_file),
                 (self.ui.actionSave, self.save_file),
@@ -48,7 +61,9 @@ class Window(QtWidgets.QMainWindow):
                 (self.ui.actionRedo, self.ui.textEdit.redo),
                 (self.ui.actionFind, self.find),
                 (self.ui.actionInsert_String, self.insert_string),
-                (self.ui.actionAbout, self.help_about))
+                (self.ui.actionAbout, self.help_about),
+                (self.ui.actionModeOW, self.set_mode_ow),
+                (self.ui.actionModeAI, self.set_mode_ai))
         for action, function in cons:
             action.triggered.connect(function)
 
@@ -65,13 +80,22 @@ class Window(QtWidgets.QMainWindow):
 
         self.ui.textEdit.setText(asc.get_canvas())
 
-    def load_file(self):
+    def ask_save(self):
+        # why would you save the base template amirite?
+        if self.ui.textEdit.text() == asc.get_canvas():
+            return True
         reply = QtWidgets.QMessageBox.question(self, 'Are you sure?',
                                                "Do you want to save this first?",
                                                QtWidgets.QMessageBox.Yes,
                                                QtWidgets.QMessageBox.No)
         if reply == QtWidgets.QMessageBox.Yes:
-            return self.save_file()
+            self.save_file()
+            return False
+        return True
+
+    def load_file(self):
+        if not self.ask_save():
+            return
 
         fn, _ = QtWidgets.QFileDialog.getOpenFileName(self, 'Open file',
                                                       QtCore.QDir.homePath(),
@@ -87,12 +111,8 @@ class Window(QtWidgets.QMainWindow):
         self.ui.statusbar.showMessage("loaded " + fn)
 
     def new_file(self):
-        reply = QtWidgets.QMessageBox.question(self, 'Are you sure?',
-                                               "Do you want to save this first?",
-                                               QtWidgets.QMessageBox.Yes,
-                                               QtWidgets.QMessageBox.No)
-        if reply == QtWidgets.QMessageBox.Yes:
-            return self.save_file()
+        if not self.ask_save():
+            return
 
         self.file_name = ''
         self.ui.textEdit.setText(asc.get_canvas())
@@ -131,16 +151,20 @@ class Window(QtWidgets.QMainWindow):
         self.compile("debug")
 
     def decompile(self, offset=None):
-        reply = QtWidgets.QMessageBox.question(self, 'Are you sure?',
-                                               "Do you want to save this first?",
-                                               QtWidgets.QMessageBox.Yes,
-                                               QtWidgets.QMessageBox.No)
-        if reply == QtWidgets.QMessageBox.Yes:
-            return self.save_file()
+        if not self.ask_save():
+            return
 
         if not self.rom_file_name:
             QtWidgets.QMessageBox.critical(self, "Error", "No ROM loaded")
             return
+
+        if self.mode == "ai" and not offset:
+            with open(self.rom_file_name, "rb") as f:
+                f.seek(0xAC)
+                code = f.read(4)
+            popup = AIScriptGetAddressPopup(self, self.rom_file_name, code)
+            popup.exec_()
+            offset = popup.selected
 
         if not offset:
             text, ok = QtWidgets.QInputDialog.getText(
@@ -159,7 +183,14 @@ class Window(QtWidgets.QMainWindow):
                 except ValueError:
                     QtWidgets.QMessageBox.critical(self, "Error", "Invalid offset")
                     return
-        self.ui.textEdit.setText(asc.decompile(self.rom_file_name, offset))
+        from . import pokecommands as pk
+        cmd, dec, end = {
+                "ow": (pk.pkcommands, pk.dec_pkcommands, pk.end_pkcommands),
+                "ai": (pk.aicommands, pk.dec_aicommands, pk.end_aicommands),
+        } [self.mode]
+        self.ui.textEdit.setText(asc.decompile(self.rom_file_name, offset,
+                                               cmd_table=cmd, dec_table=dec,
+                                               end_commands=end))
 
     def error_message(self, msg):
         QtWidgets.QMessageBox.critical(self, "Error", msg)
@@ -258,6 +289,14 @@ class Window(QtWidgets.QMainWindow):
         self.ui.textEdit.setText(text[:i] + to_insert + text[i:])
         print(popup.text)
 
+    def set_mode_ow(self):
+        self.mode = "ow"
+        print(self.mode)
+
+    def set_mode_ai(self):
+        self.mode = "ai"
+        print(self.mode)
+
 class LogPopup(QtWidgets.QDialog):
     def __init__(self, parent=None, text=""):
         QtWidgets.QDialog.__init__(self, parent)
@@ -317,6 +356,64 @@ class InsertTextBoxPopup(QtWidgets.QDialog):
         self.text = self.textedit.text()
         return
 
+class AIScriptGetAddressPopup(QtWidgets.QDialog):
+    def __init__(self, parent, rom_file_name, code):
+        QtWidgets.QDialog.__init__(self, parent)
+
+        self.selected = None
+        #self.resize(400, 300)
+
+        vbox = QtWidgets.QVBoxLayout()
+
+        ok_button = QtWidgets.QPushButton("OK")
+        ok_button.clicked.connect(self.ok)
+        nope_button = QtWidgets.QPushButton("I'll write a custom address tyvm")
+        nope_button.clicked.connect(self.nope)
+
+        self.addrs = []
+
+        groupBox = QtWidgets.QGroupBox("AI Script");
+
+        if code == b"BPRE":
+            with open(rom_file_name, "rb") as f:
+                f.seek(0x1D9BF4)
+                for _ in range(32):
+                    self.addrs.append(int.from_bytes(f.read(4), "little"))
+            self.radios = []
+            gbox = QtWidgets.QGroupBox()
+            r_vbox = QtWidgets.QVBoxLayout()
+            for addr in self.addrs:
+                radio = QtWidgets.QRadioButton(hex(addr))
+                r_vbox.addWidget(radio)
+                self.radios.append(radio)
+
+            self.radios[0].setChecked(True)
+            gbox.setLayout(r_vbox)
+            scroll = QtWidgets.QScrollArea()
+            scroll.setWidget(gbox)
+            vbox.addWidget(scroll)
+            #vbox.addStretch(1);
+            vbox.addWidget(ok_button)
+        else:
+            self.label = QtWidgets.QLabel("Sry, I don't know the list for this ROM")
+            vbox.addWidget(self.label)
+
+        vbox.addWidget(nope_button)
+
+        self.setLayout(vbox)
+
+    def ok(self):
+        self.hide()
+        self.close()
+        for i, radio in enumerate(self.radios):
+            if radio.isChecked():
+                self.selected = self.addrs[i]
+                return
+
+    def nope(self):
+        self.hide()
+        self.close()
+        return
 
 def main():
     parser = argparse.ArgumentParser(description='Red Alien, the Advanced Pokémon Script Compiler')

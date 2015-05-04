@@ -1,9 +1,8 @@
 # -*- coding: utf-8 -*-
 
-# Form implementation generated from reading ui file 'asc/asc.ui'
+# Form implementation generated from reading ui file 'asc.ui'
 #
-# Created: Sat Feb 28 15:46:29 2015
-#      by: PyQt5 UI code generator 5.4
+# Created by: PyQt5 UI code generator 5.4.1
 #
 # WARNING! All changes made in this file will be lost!
 
@@ -27,7 +26,7 @@ class Ui_MainWindow(object):
         self.verticalLayout.addWidget(self.textEdit)
         MainWindow.setCentralWidget(self.centralwidget)
         self.menubar = QtWidgets.QMenuBar(MainWindow)
-        self.menubar.setGeometry(QtCore.QRect(0, 0, 562, 21))
+        self.menubar.setGeometry(QtCore.QRect(0, 0, 562, 18))
         self.menubar.setObjectName("menubar")
         self.menuFile = QtWidgets.QMenu(self.menubar)
         self.menuFile.setObjectName("menuFile")
@@ -37,6 +36,8 @@ class Ui_MainWindow(object):
         self.menuROM.setObjectName("menuROM")
         self.menuHelp = QtWidgets.QMenu(self.menubar)
         self.menuHelp.setObjectName("menuHelp")
+        self.menuSettings = QtWidgets.QMenu(self.menubar)
+        self.menuSettings.setObjectName("menuSettings")
         MainWindow.setMenuBar(self.menubar)
         self.statusbar = QtWidgets.QStatusBar(MainWindow)
         self.statusbar.setObjectName("statusbar")
@@ -106,6 +107,7 @@ class Ui_MainWindow(object):
         self.menubar.addAction(self.menuFile.menuAction())
         self.menubar.addAction(self.menuEdit.menuAction())
         self.menubar.addAction(self.menuROM.menuAction())
+        self.menubar.addAction(self.menuSettings.menuAction())
         self.menubar.addAction(self.menuHelp.menuAction())
 
         self.retranslateUi(MainWindow)
@@ -114,29 +116,30 @@ class Ui_MainWindow(object):
     def retranslateUi(self, MainWindow):
         _translate = QtCore.QCoreApplication.translate
         MainWindow.setWindowTitle(_translate("MainWindow", "Advanced Script Compiler"))
-        self.menuFile.setTitle(_translate("MainWindow", "File"))
-        self.menuEdit.setTitle(_translate("MainWindow", "Edit"))
+        self.menuFile.setTitle(_translate("MainWindow", "Fi&le"))
+        self.menuEdit.setTitle(_translate("MainWindow", "E&dit"))
         self.menuROM.setTitle(_translate("MainWindow", "ROM"))
         self.menuHelp.setTitle(_translate("MainWindow", "Help"))
-        self.actionNew.setText(_translate("MainWindow", "New"))
-        self.actionOpen.setText(_translate("MainWindow", "Open"))
-        self.actionLoad_ROM.setText(_translate("MainWindow", "Load ROM"))
-        self.actionSave.setText(_translate("MainWindow", "Save"))
-        self.actionSave_As.setText(_translate("MainWindow", "Save As..."))
-        self.actionQuit.setText(_translate("MainWindow", "Quit"))
-        self.actionCut.setText(_translate("MainWindow", "Cut"))
-        self.actionCopy.setText(_translate("MainWindow", "Copy"))
-        self.actionPaste.setText(_translate("MainWindow", "Paste"))
-        self.actionDelete.setText(_translate("MainWindow", "Delete"))
-        self.actionUndo.setText(_translate("MainWindow", "Undo"))
-        self.actionRedo.setText(_translate("MainWindow", "Redo"))
-        self.actionDecompile.setText(_translate("MainWindow", "Decompile"))
-        self.actionCompile.setText(_translate("MainWindow", "Compile"))
-        self.actionDebug.setText(_translate("MainWindow", "Debug"))
-        self.actionAbout.setText(_translate("MainWindow", "About"))
-        self.actionFind.setText(_translate("MainWindow", "Find"))
+        self.menuSettings.setTitle(_translate("MainWindow", "Setti&ngs"))
+        self.actionNew.setText(_translate("MainWindow", "&New"))
+        self.actionOpen.setText(_translate("MainWindow", "&Open"))
+        self.actionLoad_ROM.setText(_translate("MainWindow", "&Load ROM"))
+        self.actionSave.setText(_translate("MainWindow", "&Save"))
+        self.actionSave_As.setText(_translate("MainWindow", "Sa&ve As..."))
+        self.actionQuit.setText(_translate("MainWindow", "&Quit"))
+        self.actionCut.setText(_translate("MainWindow", "&Cut"))
+        self.actionCopy.setText(_translate("MainWindow", "C&opy"))
+        self.actionPaste.setText(_translate("MainWindow", "&Paste"))
+        self.actionDelete.setText(_translate("MainWindow", "&Delete"))
+        self.actionUndo.setText(_translate("MainWindow", "&Undo"))
+        self.actionRedo.setText(_translate("MainWindow", "&Redo"))
+        self.actionDecompile.setText(_translate("MainWindow", "&Decompile"))
+        self.actionCompile.setText(_translate("MainWindow", "&Compile"))
+        self.actionDebug.setText(_translate("MainWindow", "D&ebug"))
+        self.actionAbout.setText(_translate("MainWindow", "&About"))
+        self.actionFind.setText(_translate("MainWindow", "&Find"))
         self.actionFind.setShortcut(_translate("MainWindow", "Ctrl+F"))
-        self.actionInsert_String.setText(_translate("MainWindow", "Insert String"))
+        self.actionInsert_String.setText(_translate("MainWindow", "&Insert String"))
         self.actionInsert_String.setShortcut(_translate("MainWindow", "Ctrl+B"))
 
 from PyQt5 import Qsci
