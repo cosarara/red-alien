@@ -65,13 +65,13 @@
 #             bl    branch with link, call
 # Enders:
 #     [e][way of ending]
-#         ways:
+#         possibilities:
 #             ef     end script and flee
 #             ew     end script and watch carefully
 #             e      simple end; can return if used after a bl/call
 # Setters:
 #     [s][parameter]
-#         parameters:
+#         possibilities:
 #             sv    set move viability to +/-x
 # Getters:
 #     [g][parameter]
