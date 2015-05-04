@@ -219,7 +219,7 @@
               "offset": [(1, "script")]},
 
     "ef": {"hex": 0x45},
-    "bsaeq": {"hex": 0x46, "args": ("address", (4,))},
+    "bsaeq2": {"hex": 0x46, "args": ("address", (4,))},
     "ew": {"hex": 0x47},
 
     "getholdeffect": {"hex": 0x48, "args": ("side", (1,))},
