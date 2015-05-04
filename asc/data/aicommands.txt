@@ -190,9 +190,9 @@
 
     "getweather": {"hex": 0x36},
 
-    "bmsne": {"hex": 0x37, "args": ("movescriptid, address", (1, 4)),
+    "bmseq": {"hex": 0x37, "args": ("movescriptid, address", (1, 4)),
               "offset": [(1, "script")]},
-    "bmseq": {"hex": 0x38, "args": ("movescriptid, address", (1, 4)),
+    "bmsne": {"hex": 0x38, "args": ("movescriptid, address", (1, 4)),
               "offset": [(1, "script")]},
     "bsslo": {"hex": 0x39, "args": ("side, stat, stage, address", (1, 1, 1, 4)),
               "offset": [(3, "script")]},
