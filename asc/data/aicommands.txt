@@ -49,7 +49,7 @@
 #             hs    if has move with movescript 0xBBBB
 #             sr    if any move in moveset is restricted by disable or encore
 #             mr    if current move is restricted by disable or encore
-#             sa    if safari anger is high enough
+#             sf    if safari anger is high enough
 #             ll    if has lowest level
 #             ta    if taunt is in effect
 #         conditions:
@@ -219,7 +219,7 @@
               "offset": [(1, "script")]},
 
     "ef": {"hex": 0x45},
-    "bsaeq2": {"hex": 0x46, "args": ("address", (4,))},
+    "bsfeq": {"hex": 0x46, "args": ("address", (4,))},
     "ew": {"hex": 0x47},
 
     "getholdeffect": {"hex": 0x48, "args": ("side", (1,))},
@@ -228,9 +228,9 @@
     "getstockpile": {"hex": 0x4B, "args": ("side", (1,))},
     "getdoublebattle": {"hex": 0x4C},
     "getitem": {"hex": 0x4D, "args": ("side", (1,))},
-    "gettype2": {"hex": 0x4E},
+    "getvarmovetype": {"hex": 0x4E},
     "getvarmovepower": {"hex": 0x4F},
-    "getmovescript": {"hex": 0x50},
+    "getvarmovescript": {"hex": 0x50},
     "getprotection": {"hex": 0x51, "args": ("side", (1,))},
     #"—": {"hex": 0x52},
     #"—": {"hex": 0x53},
