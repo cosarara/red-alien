@@ -16,11 +16,9 @@
 #    You should have received a copy of the GNU General Public License
 #    along with ASC.  If not, see <http://www.gnu.org/licenses/>.
 
-import string
 from string import hexdigits
 import sys
 import os
-import pkgutil
 
 # windows builds are frozen
 if getattr(sys, 'frozen', False):
