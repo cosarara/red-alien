@@ -1,4 +1,5 @@
 #ifdef GS
+//@applymoves_gs
 #define move_end #raw 0x47
 #define look_down #raw 0x00
 #define look_up #raw 0x01
@@ -77,6 +78,7 @@
 #endif
 
 #ifdef FR
+//@applymoves_fr
 #define move_end #raw 0xfe
 #define look_up #raw 0x01
 #define look_left #raw 0x02
@@ -174,6 +176,7 @@
 #endif
 
 #ifdef RS
+//@applymoves_rs
 #define move_end #raw 0xfe
 #define hide #raw 0x54
 #define show #raw 0x55

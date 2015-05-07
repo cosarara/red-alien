@@ -1,32 +1,33 @@
 // This file is not to be used (yet)
-@side
+// these //@ have meaning
+//@side
 #define defender 0
 #define attacker 1
-@side (only for blleq)
+//@side (only for blleq)
 #define equal 2
 
-@typeof
+//@typeof
 #define defender1 0
 #define attacker1 1
 
-@typeof and side (not for blleq)
+//@typeof and side (not for blleq)
 #define defender2 2
 #define attacker2 3
 #define move 4
 
-@after getmoverate
+//@after getmoverate
 #define notdamaging 0
 #define notstrongest 1
 #define strongest 2
 
-@multiplier
+//@multiplier
 #define 2x 80
 #define 4x 160
-#define 05x 20
-#define 025x 10
+#define 5x 20
+#define 25x 10
 #define 0x 0
 
-@stat
+//@stat
 #define hp 0
 #define atk 1
 #define attack 1
@@ -45,7 +46,7 @@
 #define eva 7
 #define evasion 7
 
-@stage
+//@stage
 #define stage-6 0x0
 #define stage-5 0x1
 #define stage-4 0x2
@@ -60,11 +61,11 @@
 #define stage+5 0xB
 #define stage+6 0xC
 
-@disableorencore
+//@disableorencore
 #define disable 0
 #define encore 1
 
-//@condition
-//#define 
+////@condition
+//#define
 //#define
 //#define
