@@ -626,10 +626,11 @@ def const_arg(cmd, arg, arg_i, cmd_table, dec_table, rombytes, history):
     types = cmd_data["args"][0]
     sizes = cmd_data["args"][1]
     type = types.split(",")[arg_i].strip()
+    intt = lambda a : int(a, 16) if a.startswith("0x") else int(a)
     # abilities
     with open(os.path.join(data_path, "stdlib", "stdabilities.rbh")) as f:
         abis = f.read().strip()
-    abis = {int(a.split()[2], 16): a.split()[1]
+    abis = {intt(a.split()[2]): a.split()[1]
             for a in abis.split("\n")}
     # random args
     with open(os.path.join(data_path, "stdlib", "stdargs.rbh")) as f:
@@ -639,15 +640,21 @@ def const_arg(cmd, arg, arg_i, cmd_table, dec_table, rombytes, history):
         this_type = arg_names.split("\n")[0]
         args = list(filter(lambda s: "#define" in s,
                            remove_comments(arg_names).split("\n")))
-        arglist = {int(value, 16): name
+        arglist = {intt(value): name
                    for _, name, value in map(str.split, args)}
         args_for_type[this_type] = arglist
     # attacks
     with open(os.path.join(data_path, "stdlib", "stdattacks.rbh")) as f:
         attacks = f.read().strip()
-    attacks = {int(a.split()[2], 16): a.split()[1]
+    attacks = {intt(a.split()[2]): a.split()[1]
                for a in attacks.split("\n")}
     args_for_type["moveid"] = attacks
+    # effects
+    with open(os.path.join(data_path, "stdlib", "stdeffects.rbh")) as f:
+        effects = f.read().strip()
+    effects = {intt(a.split()[2]): a.split()[1]
+               for a in effects.split("\n")}
+    args_for_type["movescriptid"] = effects
     #
     with open(os.path.join(data_path, "stdlib", "stdargs.rbh")) as f:
         attacks = f.read().strip().split("\n")
@@ -658,7 +665,9 @@ def const_arg(cmd, arg, arg_i, cmd_table, dec_table, rombytes, history):
                     return abis[arg], "stdabilities.rbh"
         if type in args_for_type:
             args = args_for_type[type]
-            header = "stdattacks.rbh" if type == "moveid" else "stdargs.rbh"
+            header = ("stdattacks.rbh" if type == "moveid" else
+                      "stdeffects.rbh" if type == "movescriptid" else
+                      "stdargs.rbh")
             if arg in args:
                 return args[arg], header
     return None, ""
