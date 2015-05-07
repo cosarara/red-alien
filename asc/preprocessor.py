@@ -90,10 +90,15 @@ def preprocess(text_script, include_path, symbols=None):
         else:
             # Replace #define'd symbols
             for name, value in symbols:
-                # Because CAMERA mustn't conflict with CAMERA_START
-                name = name.replace("+", r"\+")
+                # we do things the hard way because CAMERA mustn't conflict with CAMERA_START
+                #name = name.replace("+", r"\+")
                 try:
-                    line = re.sub(r"(^|\s)"+name+r"($|\s)", r"\g<1>"+value+r"\g<2>", line)
+                    #line = re.sub(r"(^|\s)"+name+r"($|\s)", r"\g<1>"+value+r"\g<2>", line)
+                    # This is A LOT faster than the regexp:
+                    for i, j in ((" ", " "), ("(", " "), (" ", ")"),
+                                 (" ", "\n"), ("\n", "\n")):
+                        line = line.replace(i + name + j, i + value + j)
+
                 except:
                     print(name, value, line)
                     print("Error on line", line_n)
