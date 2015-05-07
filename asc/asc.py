@@ -634,8 +634,6 @@ def const_arg(cmd, arg, arg_i, cmd_table, dec_table, rombytes, history):
     # random args
     with open(os.path.join(data_path, "stdlib", "stdargs.rbh")) as f:
         arg_names_list = f.read().strip().split("//@")
-    #args = {int(a.split()[2], 16): a.split()[1]
-    #        for a in args.split("\n")}
     args_for_type = {}
     for arg_names in arg_names_list:
         this_type = arg_names.split("\n")[0]
@@ -644,10 +642,15 @@ def const_arg(cmd, arg, arg_i, cmd_table, dec_table, rombytes, history):
         arglist = {int(value, 16): name
                    for _, name, value in map(str.split, args)}
         args_for_type[this_type] = arglist
-    #from pprint import pprint
-    #pprint(args_for_type)
-    #exit(0)
+    # attacks
+    with open(os.path.join(data_path, "stdlib", "stdattacks.rbh")) as f:
+        attacks = f.read().strip()
+    attacks = {int(a.split()[2], 16): a.split()[1]
+               for a in attacks.split("\n")}
+    args_for_type["moveid"] = attacks
     #
+    with open(os.path.join(data_path, "stdlib", "stdargs.rbh")) as f:
+        attacks = f.read().strip().split("\n")
     if cmd_table == pk.aicommands:
         if cmd[:3] == "bvb" and type == "byte":
             if "getability" in history: # todo: find latest relevant thing
@@ -655,8 +658,9 @@ def const_arg(cmd, arg, arg_i, cmd_table, dec_table, rombytes, history):
                     return abis[arg], "stdabilities.rbh"
         if type in args_for_type:
             args = args_for_type[type]
+            header = "stdattacks.rbh" if type == "moveid" else "stdargs.rbh"
             if arg in args:
-                return args[arg], "stdargs.rbh"
+                return args[arg], header
     return None, ""
 
 def demake_bytecode(rombytes, offset, added_offsets,
@@ -993,7 +997,7 @@ def main():
             pass
         include_path = (".", os.path.dirname(args.rom),
                         os.path.dirname(args.script), get_program_dir(),
-                        data_path)
+                        data_path, os.path.join(data_path, "stdlib"))
         script = dirty_compile(script, include_path)
         vdebug(script)
         if args.command == "b" and args.compile_only:

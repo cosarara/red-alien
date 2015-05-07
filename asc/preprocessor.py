@@ -91,6 +91,7 @@ def preprocess(text_script, include_path, symbols=None):
             # Replace #define'd symbols
             for name, value in symbols:
                 # Because CAMERA mustn't conflict with CAMERA_START
+                name = name.replace("+", r"\+")
                 try:
                     line = re.sub(r"(^|\s)"+name+r"($|\s)", r"\g<1>"+value+r"\g<2>", line)
                 except:
