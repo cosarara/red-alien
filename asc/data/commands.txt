@@ -278,16 +278,18 @@
 # Aliases
 # format:    Alias:normal_name
 {"waitmovement": "pauseevent",
-           "givepokemon": "addpokemon",
-           "giveitem": "additem",
-           "wildbattle": "battle",
-           "#dynamic": "#dyn",
-           "goto": "jump",
-           "closeonkeypress": "closemsg",
-           "msgbox": "loadpointer",
-           "hidesprite": "disappear",
-           "showsprite": "reappear",
-           "nop": "nop0"},
+ "givepokemon": "addpokemon",
+ "giveitem": "additem",
+ "wildbattle": "battle",
+ "#dynamic": "#dyn",
+ "goto": "jump",
+ "closeonkeypress": "closemsg",
+ "msgbox": "loadpointer",
+ "hidesprite": "disappear",
+ "showsprite": "reappear",
+ "nop": "nop0",
+ "subvar": "subtractvar",
+ "waitstate": "waitspecial"},
 # ends
 ["end", "jump", "return"]
 )
