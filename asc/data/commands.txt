@@ -29,14 +29,6 @@
 
 # Commands
 ({
-    # "fake" commands (commands without hex translation)
-    "#org": {"args": ("offset", (4,))},
-    "=": {"args": ("text", ("*",))},
-    "#dyn": {"args": ("offset", (4,))},
-    "#raw": {"args": ("hex byte", (1,))},
-    "if": {"args": ("comp, command, offset", (1, 1, 4))},
-    "softend": {}, # A likely useless end which doesn't compile to end
-    # "Real" commands
     "nop0": {"hex": 0x00},
     "nop1": {"hex": 0x01},
     "end": {"hex": 0x02},
@@ -93,7 +85,7 @@
     "cry": {"hex": 0x30, "args": ("bank, poke", (1, 2))},
     "fanfare": {"hex": 0x31, "args": ("sound", (2,))},
     "waitfanfare": {"hex": 0x32},
-    "playsound": {"hex": 0x33, "args": ("sound", (2,))},
+    "playsound": {"hex": 0x33, "args": ("sound, effect", (2, 1))},
     "playsong": {"hex": 0x34, "args": ("song", (2,))},
     "fadedefault": {"hex": 0x35},
     "fadesong": {"hex": 0x36, "args": ("song", (2,))},
@@ -281,7 +273,6 @@
  "givepokemon": "addpokemon",
  "giveitem": "additem",
  "wildbattle": "battle",
- "#dynamic": "#dyn",
  "goto": "jump",
  "closeonkeypress": "closemsg",
  "msgbox": "loadpointer",

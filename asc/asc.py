@@ -91,6 +91,8 @@ def regexps(text_script):
     text_script = re.sub(r"msgbox (.+?) (.+?)", r"msgbox \1\ncallstd \2",
                          text_script)
     text_script = text_script.replace("goto", "jump")
+    text_script = text_script.replace("calculatedamage",
+                                      "critcalc\ncmd5\ncmd6\ncmd7")
 
     # Join lines ending with \
     text_script = re.sub("\\\\\\n", r"", text_script)
@@ -611,6 +613,8 @@ def decompile(file_name, offset, type_="script", raw=False,
         decompiled_offsets.append(offset)
         # Removing duplicates doesn't hurt, right?
         decompiled_offsets = list(set(decompiled_offsets))
+        if len(textscript) > 200000:
+            raise Exception('This seems too long, crashing for your safety')
     return textscript
 
 
@@ -984,8 +988,10 @@ def main():
     modes = {
         "event": (pk.pkcommands, pk.dec_pkcommands, pk.end_pkcommands),
         "battle_ai": (pk.aicommands, pk.dec_aicommands, pk.end_aicommands),
+        "battle": (pk.bscommands, pk.dec_bscommands, pk.end_bscommands),
     }
     if "command" not in args or args.mode not in modes:
+        print('MODE not one of', list(modes.keys()))
         parser.print_help()
         sys.exit(1)
     cmd_table, dec_table, end_cmds = modes[args.mode]

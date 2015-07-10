@@ -1,0 +1,21 @@
+#dynamic 0x720000
+
+'#include moves.bsh
+
+#org @start
+attackcanceler
+accuracycheck 0x1D695E 0x0
+attackstring
+ppreduce
+calculatedamage
+attackanimation
+waitanimation
+cmd5c 0x0
+waitstate
+datahpupdate 0x0
+graphicalhpupdate 0x0
+critmessage
+waitmessage 0x40
+resultmessage
+waitmessage 0x40
+goto 0x1D6947

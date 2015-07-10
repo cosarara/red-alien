@@ -77,15 +77,6 @@
 #     [g][parameter]
 
 ({
-    # phony commands (commands without hex translation)
-    # - TODO: is this needed?
-    "#org": {"args": ("offset", (4,))},
-    "=": {"args": ("text", ("*",))},
-    "#dyn": {"args": ("offset", (4,))},
-    "#raw": {"args": ("hex byte", (1,))},
-    "if": {"args": ("comp, command, offset", (1, 1, 4))},
-    "softend": {}, # A likely useless end which doesn't compile to end
-
     # Real commands
     "bralo": {"hex": 0x00, "args": ("value, address", (1, 4)),
               "offset": [(1, "script")]},

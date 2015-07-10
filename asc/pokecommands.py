@@ -56,7 +56,16 @@ def make_tables(fn):
         pkcommands_and_aliases[alias] = pkcommands[normal_name]
 
     pkcommands = pkcommands_and_aliases
+    pkcommands.update({
+        "#org": {"args": ("offset", (4,))},
+        "=": {"args": ("text", ("*",))},
+        "#dyn": {"args": ("offset", (4,))},
+        "#dynamic": {"args": ("offset", (4,))},
+        "#raw": {"args": ("hex byte", (1,))},
+        "softend": {}, # A likely useless end which doesn't compile to end
+    })
     return pkcommands, dec_pkcommands, end_cmds
 pkcommands, dec_pkcommands, end_pkcommands = make_tables("commands.txt")
 aicommands, dec_aicommands, end_aicommands = make_tables("aicommands.txt")
+bscommands, dec_bscommands, end_bscommands = make_tables("bscommands.txt")
 
