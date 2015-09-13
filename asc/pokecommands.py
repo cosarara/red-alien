@@ -62,6 +62,7 @@ def make_tables(fn):
         "#dyn": {"args": ("offset", (4,))},
         "#dynamic": {"args": ("offset", (4,))},
         "#raw": {"args": ("hex byte", (1,))},
+        "if": {"args": ("comp, command, offset", (1, 1, 4))},
         "softend": {}, # A likely useless end which doesn't compile to end
     })
     return pkcommands, dec_pkcommands, end_cmds

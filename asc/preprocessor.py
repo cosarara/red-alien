@@ -92,12 +92,14 @@ def preprocess(text_script, include_path, symbols=None):
             for name, value in symbols:
                 # we do things the hard way because CAMERA mustn't conflict with CAMERA_START
                 #name = name.replace("+", r"\+")
+                if not name in line:
+                    continue
                 try:
-                    #line = re.sub(r"(^|\s)"+name+r"($|\s)", r"\g<1>"+value+r"\g<2>", line)
-                    # This is A LOT faster than the regexp:
-                    for i, j in ((" ", " "), ("(", " "), (" ", ")"),
-                                 (" ", "\n"), ("\n", "\n")):
-                        line = line.replace(i + name + j, i + value + j)
+                    line = re.sub(r"\b"+name+r"\b", value, line)
+                    # Doesn't take into account these lines do not start/end in \n:
+                    #for i, j in ((" ", " "), ("(", " "), (" ", ")"),
+                    #             (" ", "\n"), ("\n", "\n")):
+                    #    line = line.replace(i + name + j, i + value + j)
 
                 except:
                     print(name, value, line)
