@@ -14,8 +14,8 @@ def crash(exception):
 def crash_qt(info):
     from PyQt5 import QtWidgets
     app = QtWidgets.QApplication(sys.argv)
-    QtWidgets.QMessageBox.critical(None,"Error",
-            "Something bad happened:\n" + info)
+    QtWidgets.QMessageBox.critical(None, "Error",
+                                   "Something bad happened:\n" + info)
 
 def crash_tk(info):
     import tkinter as tk
@@ -35,7 +35,7 @@ def crash_cli(ex):
 
 if __name__ == "__main__":
     try:
-        aww
+        aww # pylint: disable=undefined-variable
     except Exception as e:
         crash(e)
 

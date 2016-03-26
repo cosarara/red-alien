@@ -276,6 +276,7 @@
  "goto": "jump",
  "closeonkeypress": "closemsg",
  "msgbox": "loadpointer",
+ "loadptr": "loadpointer",
  "hidesprite": "disappear",
  "showsprite": "reappear",
  "nop": "nop0",

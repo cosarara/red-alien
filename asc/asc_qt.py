@@ -1,13 +1,13 @@
 #!/usr/bin/python3
 
-""" Blue Spider's GUI """
+""" Red Alien's GUI """
 
 import sys
-from PyQt5 import QtCore, QtGui, QtWidgets
-from PyQt5 import Qsci
 import argparse
 import pkgutil
 import os
+from PyQt5 import QtCore, QtGui, QtWidgets
+from PyQt5 import Qsci
 from .qtgui import Ui_MainWindow
 from . import asc
 
@@ -185,9 +185,9 @@ class Window(QtWidgets.QMainWindow):
                     return
         from . import pokecommands as pk
         cmd, dec, end = {
-                "ow": (pk.pkcommands, pk.dec_pkcommands, pk.end_pkcommands),
-                "ai": (pk.aicommands, pk.dec_aicommands, pk.end_aicommands),
-        } [self.mode]
+            "ow": (pk.pkcommands, pk.dec_pkcommands, pk.end_pkcommands),
+            "ai": (pk.aicommands, pk.dec_aicommands, pk.end_aicommands),
+        }[self.mode]
         self.ui.textEdit.setText(asc.decompile(self.rom_file_name, offset,
                                                cmd_table=cmd, dec_table=dec,
                                                end_commands=end))
@@ -207,34 +207,27 @@ class Window(QtWidgets.QMainWindow):
         include_path = (".", os.path.dirname(self.rom_file_name),
                         os.path.dirname(self.file_name), asc.get_program_dir(),
                         asc.data_path)
+        from . import pokecommands as pk
+        cmd, dec, end = {
+            "ow": (pk.pkcommands, pk.dec_pkcommands, pk.end_pkcommands),
+            "ai": (pk.aicommands, pk.dec_aicommands, pk.end_aicommands),
+        }[self.mode]
         try:
-            script = asc.dirty_compile(script, include_path)
-            parsed_script, dyn = asc.asm_parse(script)
-            hex_script = asc.make_bytecode(parsed_script)
+            cleanlines = asc.compile_script(script,
+                                            include_path,
+                                            self.file_name or "current_script")
+            hex_script, log = asc.assemble(cleanlines,
+                                           self.rom_file_name,
+                                           include_path,
+                                           cmd_table=cmd)
         except Exception as e:
             self.error_message(str(e))
             return
-        log = ''
-        if dyn[0]: # If there are dynamic addresses, we have to replace
-                   # them with real adresses and recompile
-            script, log = asc.put_addresses(hex_script, script,
-                                            self.rom_file_name, dyn[1])
-        script = asc.put_addresses_labels(hex_script, script)
-        try:
-            parsed_script, dyn = asc.asm_parse(script)
-            hex_script = asc.make_bytecode(parsed_script)
-        except Exception as e:
-            self.error_message(str(e))
-            return
-
-        for chunk in hex_script:
-            del chunk[2] # Will always be []
 
         if mode == "compile":
             asc.write_hex_script(hex_script, self.rom_file_name)
-            QtWidgets.QMessageBox.information(self, "Done!",
-                                              "Script compiled and written "
-                                              "successfully")
+            QtWidgets.QMessageBox.information(
+                self, "Done!", "Script compiled and written successfully")
         else:
             LogPopup(self, asc.nice_dbg_output(hex_script))
 
@@ -245,7 +238,7 @@ class Window(QtWidgets.QMainWindow):
         QtWidgets.QMessageBox.about(self, "About Red Alien",
                                     ("Red Alien,"
                                      "the Advanced Pokémon Script Compiler\n"
-                                     "Copyright © 2012 Jaume Delclòs Coll\n"
+                                     "Copyright © 2012-2016 Jaume Delclòs Coll\n"
                                      "(aka cosarara97)"))
 
     def find(self):
@@ -372,7 +365,7 @@ class AIScriptGetAddressPopup(QtWidgets.QDialog):
 
         self.addrs = []
 
-        groupBox = QtWidgets.QGroupBox("AI Script");
+        groupBox = QtWidgets.QGroupBox("AI Script")
 
         if code == b"BPRE":
             with open(rom_file_name, "rb") as f:

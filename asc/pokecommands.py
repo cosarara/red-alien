@@ -63,9 +63,13 @@ def make_tables(fn):
         "#dynamic": {"args": ("offset", (4,))},
         "#raw": {"args": ("hex byte", (1,))},
         "if": {"args": ("comp, command, offset", (1, 1, 4))},
-        "softend": {}, # A likely useless end which doesn't compile to end
     })
+    for key in pkcommands:
+        command = pkcommands[key]
+        if not 'args' in command:
+            command['args'] = ("", ())
     return pkcommands, dec_pkcommands, end_cmds
+
 pkcommands, dec_pkcommands, end_pkcommands = make_tables("commands.txt")
 aicommands, dec_aicommands, end_aicommands = make_tables("aicommands.txt")
 bscommands, dec_bscommands, end_bscommands = make_tables("bscommands.txt")
