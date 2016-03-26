@@ -1,0 +1,12 @@
+[Desktop Entry]
+Name=Red Alien
+GenericName=Pokémon Script Compiler
+Comment=Edit and Compile Pokémon Scripts
+TryExec=asc-qt
+Exec=asc-qt %F
+Terminal=false
+Type=Application
+Icon=red-alien
+Categories=Development;IDE;
+StartupNotify=true
+MimeType=text/x-pks;
