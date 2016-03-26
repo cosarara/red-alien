@@ -21,6 +21,7 @@
 import sys
 import os
 import argparse
+from . import compiler
 from .compiler import assemble, compile_script, write_hex_script
 from . import decompiler
 from .decompiler import decompile
@@ -214,6 +215,10 @@ def main():
                         os.path.dirname(args.script), get_program_dir(),
                         data_path, os.path.join(data_path, "stdlib"))
         cleanlines = compile_script(script, include_path, args.script)
+        if utils.VERBOSE:
+            print("\nscript compiled down to asm:")
+            compiler.print_lines(cleanlines)
+            print("end of script\n")
         hex_script, log = assemble(cleanlines, args.rom, include_path, cmd_table=cmd_table)
         if args.clean:
             with open(args.script+".clean.pks", "w") as f:

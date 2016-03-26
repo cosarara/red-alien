@@ -204,6 +204,7 @@ def highlevel(cleanlines):
     n = 0
     while n < len(cleanlines):
         cleanline = cleanlines[n]
+        start_n = n
         n += 1
         line = ' '.join(cleanline.items)
         fif = re.match(r'if\s*\(', line)
@@ -214,6 +215,14 @@ def highlevel(cleanlines):
         if not condition:
             raise Exception('Control struct without condition at {}'.format(cleanline))
         condition = condition.group(1).strip()
+        # pretty hackish
+        if re.match('(?:if|while)\s*\(.*?\)\s*{', line):
+            if not re.match('(?:if|while)\s*\(.*?\)\s*{$', line):
+                raise Exception('garbage at the end of the line at {}'.format(cleanline))
+        else:
+            if cleanlines[n].items != ['{']:
+                raise Exception('Control struct without opening brace {{ at {}'.format(cleanline))
+            n += 1
         to_insert = [] # bare strings
         if fwhile:
             label_id = get_uid()
@@ -223,7 +232,7 @@ def highlevel(cleanlines):
             to_insert += instructions_for_condition(condition, end_label)
 
             to_insert = [CleanLine(t.split(" "), cleanline.source_line) for t in to_insert]
-            cleanlines[n-1:n] = to_insert
+            cleanlines[start_n:n] = to_insert
             end_pos = find_matching_bracket(cleanlines, n+1)
             if end_pos is None:
                 raise Exception("No matching }} found for line {}".format(cleanline))
@@ -266,7 +275,7 @@ def highlevel(cleanlines):
             to_insert = instructions_for_condition(condition, end_label)
             to_insert = [CleanLine(t.split(" "), cleanline.source_line) for t in to_insert]
 
-            cleanlines[n-1:n] = to_insert
+            cleanlines[start_n:n] = to_insert
     return cleanlines
 
 def compile_script(text, include_path, filename):
@@ -342,7 +351,7 @@ def make_bytecode(script_list, cmd_table, have_dynamic, incbin_path):
 
         for line in script.lines:
             command = line.items[0]
-            vdebug(command)
+            vdebug(' '.join(line.items))
             args = line.items[1:]
             def assert_argn(expected_args):
                 if expected_args != len(args):
