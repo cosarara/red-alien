@@ -507,18 +507,18 @@ def put_addresses(hex_chunks, blocks, file_name, dynamic_start, pre_pad, post_pa
 def write_hex_script(hex_scripts, rom_file_name):
     ''' Write every chunk of bytes onto the big ROM file '''
     file_name = rom_file_name
+    with open(file_name, "rb") as f:
+        rom_bytes = f.read()
+    rom_ba = bytearray(rom_bytes)
     for script in hex_scripts:
-        with open(file_name, "rb") as f:
-            rom_bytes = f.read()
-        rom_ba = bytearray(rom_bytes)
         offset = int(script[0], 16)
         offset = get_rom_offset(offset)
         hex_script = script[1]
         vdebug("chunk length = " + hex(len(hex_script)))
         rom_ba[offset:offset+len(hex_script)] = hex_script
 
-        with open(file_name, "wb") as f:
-            f.write(rom_ba)
+    with open(file_name, "wb") as f:
+        f.write(rom_ba)
 
 def assemble(script, rom_file_name, include_path, symbols, cmd_table=pk.pkcommands):
     ''' Compiles a plain script and returns a tuple containing
