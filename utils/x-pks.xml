@@ -1,6 +1,8 @@
 <?xml version="1.0" encoding="utf-8"?>
-<mime-type xmlns="http://www.freedesktop.org/standards/shared-mime-info" type="text/x-pks">
-  <comment>Pokémon Script</comment>
-  <sub-class-of type="text/plain"/>
-  <glob pattern="*.pks" case-sensitive="true"/>
-</mime-type>
+<mime-info xmlns="http://www.freedesktop.org/standards/shared-mime-info">
+  <mime-type type="text/x-pks">
+    <comment>Pokémon Script</comment>
+    <sub-class-of type="text/plain"/>
+    <glob pattern="*.pks" case-sensitive="true"/>
+  </mime-type>
+</mime-info>
