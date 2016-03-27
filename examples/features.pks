@@ -9,7 +9,7 @@
 checkflag EM_BADGE1
 if 0 jump :ya_noob // Wild PKSV/C-style labels appeared
 msgbox @good 6 // Wild XSE compatibility appeared!
-if (! EM_BADGE2 ) {
+if ( ! EM_BADGE2 ) {
 	loadpointer :bg2_bad
 	callstd 6
 } else {
@@ -36,10 +36,10 @@ end
 :bg2_bad
 = But you didn't get the 2nd\none...\xFF
 
-:bg2_bad
+:bg2_bad2
 = But you didn't get the 2nd\none...
 
-// See? No terminating here, since it will be separated from the next one automagically
+// See? No terminating ff here, since it will be separated from the next one automagically
 
 #org @good // It's an ugly-ass traditional string!
 = You are good man\pYou are pretty good.\pI think we should go have something to drink

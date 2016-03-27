@@ -177,6 +177,7 @@ def find_matching_bracket(cleanlines, start):
     return None
 
 def instructions_for_condition(condition, end_label):
+    #condition = condition.strip()
     to_insert = []
     for operator in OPERATOR_LIST:
         if operator in condition:
@@ -387,6 +388,8 @@ def make_bytecode(script_list, cmd_table, have_dynamic, incbin_path):
                 continue
 
             if command[0] == ":":
+                if any(label.name == command for label in labels):
+                    raise Exception("repeated label {} at {}".format(command, line))
                 labels.append(Label(command, len(bytecode)))
                 continue
 
