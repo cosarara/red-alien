@@ -318,12 +318,13 @@ class Window(QtWidgets.QMainWindow):
             "ai": (pk.aicommands, pk.dec_aicommands, pk.end_aicommands),
         }[self.mode]
         try:
-            cleanlines = asc.compile_script(script,
-                                            include_path,
-                                            self.file_name or "current_script")
+            cleanlines, symbols = asc.compile_script(script,
+                                                     include_path,
+                                                     self.file_name or "current_script")
             hex_script, log = asc.assemble(cleanlines,
                                            self.rom_file_name,
                                            include_path,
+                                           symbols,
                                            cmd_table=cmd)
         except Exception as e:
             self.error_message(str(e))

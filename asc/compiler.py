@@ -38,8 +38,7 @@ def remove_comments(text):
     return text
 
 def preprocess(source_lines, include_path=('.')):
-    Symbol = namedtuple('Symbol', ['name', 'value'])
-    symbols = []
+    symbols = {}
     out = []
     removing = False # inside false #ifdef, etc.
     # can't iterate because we'll mutate the list
@@ -75,9 +74,9 @@ def preprocess(source_lines, include_path=('.')):
             if removing:
                 continue
             if command == "#ifdef":
-                removing = not any(args[0] == sym.name for sym in symbols)
+                removing = args[0] not in symbols
             elif command == "#ifndef":
-                removing = any(args[0] == sym.name for sym in symbols)
+                removing = args[0] in symbols
             else:
                 raise Exception("unknown #if thing at {}".format(line))
             if removing:
@@ -90,9 +89,9 @@ def preprocess(source_lines, include_path=('.')):
             continue
         if command == "#define":
             if len(args) == 1:
-                symbols.append(Symbol(args[0], True))
+                symbols[args[0]] = True
             elif len(args) > 1:
-                symbols.append(Symbol(args[0], " ".join(args[1:])))
+                symbols[args[0]] = " ".join(args[1:])
             else:
                 raise Exception('wrong arg number at {}'.format(line))
             continue
@@ -105,22 +104,23 @@ def preprocess(source_lines, include_path=('.')):
             continue
 
         for symbol in symbols:
-            if symbol.name in clean_line:
+            value = symbols[symbol]
+            if symbol in clean_line:
                 replaced = True
             items = clean_line.split()
-            if items[0] == symbol.name and "$" in symbol.value:
+            if items[0] == symbol and "$" in value:
                 args = items[1:]
-                new_line = symbol.value
+                new_line = value
                 for arg_n, arg in enumerate(args):
                     new_line = new_line.replace("$"+str(arg_n+1), arg)
                 clean_line = new_line
             else:
-                clean_line = clean_line.replace(symbol.name, str(symbol.value))
+                clean_line = clean_line.replace(symbol, str(value))
         for l in clean_line.split(';'):
             if not l:
                 continue
             out.append(CleanLine(l.split(), line))
-    return out
+    return out, symbols
 
 last_id = 0
 def get_uid():
@@ -283,8 +283,8 @@ def compile_script(text, include_path, filename):
     """ goes from text to a list of CleanLine's,
     each with a list of simple items:
     #org, #dyn, #raw, commands, :labels and = lines"""
-    return highlevel(separate_multilines(preprocess(get_source_lines(text, filename),
-                                                    include_path)))
+    lines, symbols = preprocess(get_source_lines(text, filename), include_path)
+    return highlevel(separate_multilines(lines)), symbols
 
 def parse_int(nn):
     try:
@@ -341,7 +341,8 @@ def separate_scripts(cleanlines): #, end_commands=("end", "softend"),
             block_list[-1].lines.append(line)
     return block_list, dyn
 
-def make_bytecode(script_list, cmd_table, have_dynamic, have_labels, incbin_path):
+def make_bytecode(script_list, cmd_table, have_dynamic, have_labels,
+                  incbin_path, end_strings=False):
     ''' Compile list of ScriptBlock '''
     hex_scripts = []
     Label = namedtuple("Label", ['name', 'offset'])
@@ -362,6 +363,8 @@ def make_bytecode(script_list, cmd_table, have_dynamic, have_labels, incbin_path
             if command == '=':
                 text = ''.join(args)
                 bytecode += text_translate.ascii_to_hex(text)
+                if end_strings:
+                    bytecode += b'\xff'
                 continue
             try:
                 if command == '#raw' or command == "#byte":
@@ -465,7 +468,7 @@ def put_addresses_labels(hex_chunks, blocks):
             blocks = blocks_replace(blocks, name, pos)
     return blocks
 
-def put_addresses(hex_chunks, blocks, file_name, dynamic_start):
+def put_addresses(hex_chunks, blocks, file_name, dynamic_start, pre_pad, post_pad):
     ''' Find free space and replace #dynamic @labels with real addresses '''
     rom_file_r = open(file_name, "rb")
     rom_bytes = rom_file_r.read()
@@ -486,7 +489,7 @@ def put_addresses(hex_chunks, blocks, file_name, dynamic_start):
         # If there is free space at the address the user has given us,
         # though, it's ok to use it without margin.
         if address_with_free_space != dynamic_start:
-            address_with_free_space += 2
+            address_with_free_space += pre_pad
         if address_with_free_space == -1:
             print(len(rom_bytes))
             print(len(free_space))
@@ -496,7 +499,7 @@ def put_addresses(hex_chunks, blocks, file_name, dynamic_start):
         new_addr = hex(address_with_free_space)
         blocks = blocks_replace(blocks, offset, new_addr)
         hex_chunks[i][0] = new_addr
-        last = address_with_free_space + length + 10 # padding TODO: user configurable
+        last = address_with_free_space + length + post_pad # padding TODO: user configurable
         offsets_found_log += (offset + ' - ' +
                               hex(address_with_free_space) + '\n')
     return blocks, offsets_found_log
@@ -517,19 +520,21 @@ def write_hex_script(hex_scripts, rom_file_name):
         with open(file_name, "wb") as f:
             f.write(rom_ba)
 
-def assemble(script, rom_file_name, include_path, cmd_table=pk.pkcommands):
+def assemble(script, rom_file_name, include_path, symbols, cmd_table=pk.pkcommands):
     ''' Compiles a plain script and returns a tuple containing
         a list and a string. The string is the #dyn log.
         The list contains a list for every location where
         something should be written. These lists are 2
         elements each, the offset where data should be
-        written and the data itself '''
+        written and the data itself,
+        Symbols provide config by magic macros'''
     debug("separating blocks...")
     #parsed_script, dyn = asm_parse(script, cmd_table=cmd_table)
     blocks, dyn = separate_scripts(script)
     #vpdebug(parsed_script)
     debug("compiling down to bytecode...")
-    hex_script = make_bytecode(blocks, cmd_table, dyn, True, include_path)
+    end_strings = "_TERMINATE_STRINGS" in symbols
+    hex_script = make_bytecode(blocks, cmd_table, dyn, True, include_path, end_strings)
     debug(hex_script)
     log = ''
     debug("doing dynamic and label things...")
@@ -537,7 +542,13 @@ def assemble(script, rom_file_name, include_path, cmd_table=pk.pkcommands):
     if dyn and rom_file_name:
         debug("going dynamic!")
         debug("replacing dyn addresses by offsets...")
-        blocks, log = put_addresses(hex_script, blocks, rom_file_name, dyn)
+        pre_pad = 2
+        post_pad = 10
+        if "_PRE_DYN_PADDING" in symbols:
+            pre_pad = parse_int(symbols["_PRE_DYN_PADDING"])
+        if "_POST_DYN_PADDING" in symbols:
+            post_pad = parse_int(symbols["_POST_DYN_PADDING"])
+        blocks, log = put_addresses(hex_script, blocks, rom_file_name, dyn, pre_pad, post_pad)
         #vdebug(script)
 
     # Now with :labels we have to recompile even if
@@ -548,7 +559,7 @@ def assemble(script, rom_file_name, include_path, cmd_table=pk.pkcommands):
 
     #parsed_script, dyn = asm_parse(script, cmd_table=cmd_table)
     debug("recompiling")
-    hex_script = make_bytecode(blocks, cmd_table, None, False, include_path)
+    hex_script = make_bytecode(blocks, cmd_table, None, False, include_path, end_strings)
 
     # Remove the labels list, which will be empty and useless now
     for chunk in hex_script:
