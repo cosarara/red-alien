@@ -231,13 +231,13 @@ def highlevel(cleanlines):
             to_insert.append(start_label)
             to_insert += instructions_for_condition(condition, end_label)
 
-            to_insert = [CleanLine(t.split(" "), cleanline.source_line) for t in to_insert]
+            to_insert = [CleanLine(t.split(), cleanline.source_line) for t in to_insert]
             cleanlines[start_n:n] = to_insert
             end_pos = find_matching_bracket(cleanlines, n+1)
             if end_pos is None:
                 raise Exception("No matching }} found for line {}".format(cleanline))
             to_insert = ["jump {}".format(start_label), end_label]
-            to_insert = [CleanLine(t.split(" "), cleanlines[end_pos].source_line)
+            to_insert = [CleanLine(t.split(), cleanlines[end_pos].source_line)
                          for t in to_insert]
             cleanlines[end_pos:end_pos+1] = to_insert
         elif fif:
@@ -257,7 +257,7 @@ def highlevel(cleanlines):
 
                 to_insert = [else_end_label]
                 else_end = find_matching_bracket(cleanlines, else_start+2)
-                to_insert = [CleanLine(t.split(" "), cleanlines[else_end].source_line)
+                to_insert = [CleanLine(t.split(), cleanlines[else_end].source_line)
                              for t in to_insert]
                 cleanlines[else_end:else_end+1] = to_insert
 
@@ -268,12 +268,12 @@ def highlevel(cleanlines):
             # you fuck up the indices otherwise
             # end
             to_insert = [end_label]
-            to_insert = [CleanLine(t.split(" "), cleanlines[end_pos].source_line)
+            to_insert = [CleanLine(t.split(), cleanlines[end_pos].source_line)
                          for t in to_insert]
             cleanlines[end_pos:end_pos+1] = to_insert
             # start
             to_insert = instructions_for_condition(condition, end_label)
-            to_insert = [CleanLine(t.split(" "), cleanline.source_line) for t in to_insert]
+            to_insert = [CleanLine(t.split(), cleanline.source_line) for t in to_insert]
 
             cleanlines[start_n:n] = to_insert
     return cleanlines
