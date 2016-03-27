@@ -6,10 +6,115 @@ import sys
 import argparse
 import pkgutil
 import os
+import re
 from PyQt5 import QtCore, QtGui, QtWidgets
 from PyQt5 import Qsci
 from .qtgui import Ui_MainWindow
 from . import asc
+
+class QsciLexerPKS(Qsci.QsciLexerCustom):
+    def __init__(self, parent):
+         Qsci.QsciLexerCustom.__init__(self, parent)
+         self._styles = {
+             0: 'Default',
+             1: 'Comment',
+             2: 'Label',
+             3: 'Macro',
+             4: 'Value',
+             5: 'String',
+             6: 'Keyword',
+             7: 'Whitespace',
+             8: 'Linestart',
+             }
+         for key,value in self._styles.items():
+             setattr(self, value, key)
+
+    def description(self, style):
+        return self._styles.get(style, '')
+
+    def defaultColor(self, style):
+        if style in (self.Default, self.Whitespace, self.Linestart):
+            return QtGui.QColor('#000000')
+        elif style == self.Comment:
+            return QtGui.QColor('#707070')
+        elif style == self.Label:
+            return QtGui.QColor('#2244CC')
+        elif style == self.String:
+            return QtGui.QColor('#DD1133')
+        elif style == self.Macro:
+            return QtGui.QColor('#AA6622')
+        elif style == self.Value:
+            return QtGui.QColor('#00BB33')
+        elif style == self.Keyword:
+            return QtGui.QColor('#B044B0')
+        return Qsci.QsciLexerCustom.defaultColor(self, style)
+
+    def styleText(self, start, end):
+        editor = self.editor()
+        if editor is None:
+            return
+
+        if end > editor.length():
+            end = editor.length()
+        if end <= start:
+            return
+
+        source = bytearray(end - start)
+        editor.SendScintilla(editor.SCI_GETTEXTRANGE, start, end, source)
+
+        # the line index will also be needed to implement folding
+        index = editor.SendScintilla(editor.SCI_LINEFROMPOSITION, start)
+        if index > 0:
+            # the previous state may be needed for multi-line styling
+            pos = editor.SendScintilla(editor.SCI_GETLINEENDPOSITION, index - 1)
+            state = editor.SendScintilla(editor.SCI_GETSTYLEAT, pos)
+        else:
+            state = self.Default
+
+        set_style = self.setStyling
+        self.startStyling(start, 0x1f)
+
+        # scintilla always asks to style whole lines
+        for line in source.splitlines(True):
+            length = len(line)
+            if length == 0:
+                continue
+            pos = 0
+            text = line[pos:]
+            state = self.Linestart
+            while text:
+                matched = False
+                text = line[pos:]
+                matches = [
+                    (rb'[@:]\S+', self.Label, (self.Whitespace, self.Linestart)),
+                    (rb'#\S+', self.Macro, (self.Linestart,)),
+                    (rb'= .+', self.String, (self.Linestart,)),
+                    (rb"(?://|').*", self.Comment, ()),
+                    (rb'if\b|else\b', self.Keyword, (self.Whitespace, self.Linestart)),
+                    (rb'\b(?:0x[0-9a-fA-F]+[LlUu]*|\d+[LlUu]*)\b',
+                     self.Value, (self.Whitespace,)),
+                    (rb'\s+', self.Whitespace, ()),
+                ]
+                for expr, style, states in matches:
+                    if state not in states and states:
+                        continue
+                    m = re.match(expr, text)
+                    if m:
+                        state = style
+                        l = m.end()
+                        if l:
+                            matched = True
+                            pos += l
+                            if l:
+                                set_style(l, state)
+                            text = line[pos:]
+
+                if not matched and text:
+                    pos += 1
+                    state = self.Default
+                    set_style(1, self.Default)
+                    text = line[pos:]
+
 
 class Window(QtWidgets.QMainWindow):
     def __init__(self, parent=None):
@@ -74,7 +179,7 @@ class Window(QtWidgets.QMainWindow):
         self.ui.textEdit.setMarginWidth(1, 30)
         self.font = QtGui.QFont("mono", 10)
         self.ui.textEdit.setFont(self.font)
-        lexer = Qsci.QsciLexerCPP()
+        lexer = QsciLexerPKS(self.ui.textEdit)
         lexer.setDefaultFont(self.font)
         self.ui.textEdit.setLexer(lexer)
 
