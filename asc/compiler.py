@@ -454,26 +454,29 @@ def make_bytecode(script_list, cmd_table, have_dynamic, have_labels,
         hex_scripts.append(hex_script)
     return hex_scripts
 
-def blocks_replace(blocks, old, new):
+def blocks_replace(blocks, replacements):
+    r = replacements
     return [
         SourceBlock(
             block.origin,
             [CleanLine(
-                [new if (item == old and n != 0) else item
-                 for (n, item) in enumerate(line.items)],
+                [line.items[0]] +
+                [r[item] if item in r else item for item in line.items[1:]],
                 line.source_line) for line in block.lines])
         for block in blocks]
 
 def put_addresses_labels(hex_chunks, blocks):
     ''' Calculates the real address for :labels and does the needed
         searches and replacements. '''
+    replacements = {}
     for chunk in hex_chunks:
         for label in chunk[2]:
             vdebug(label)
             name = label[0]
             pos = hex(int(chunk[0], 16) + label[1])
-            vdebug(pos)
-            blocks = blocks_replace(blocks, name, pos)
+            #vdebug(pos)
+            replacements[name] = pos
+    blocks = blocks_replace(blocks, replacements)
     return blocks
 
 def put_addresses(hex_chunks, blocks, file_name, dynamic_start, pre_pad, post_pad):
@@ -483,12 +486,13 @@ def put_addresses(hex_chunks, blocks, file_name, dynamic_start, pre_pad, post_pa
     rom_file_r.close()
     offsets_found_log = ''
     last = dynamic_start
+    replacements = {}
     for i, chunk in enumerate(hex_chunks):
         vdebug(chunk)
-        offset = chunk[0]
+        label = chunk[0]
         part = chunk[1] # The hex chunk we have to put somewhere
         #labels = chunk[2]
-        if offset[0] != "@":
+        if label[0] != "@":
             continue
         length = len(part) + 2
         free_space = b"\xFF" * length
@@ -505,11 +509,13 @@ def put_addresses(hex_chunks, blocks, file_name, dynamic_start, pre_pad, post_pa
             print(last)
             raise Exception("No free space to put script.")
         new_addr = hex(address_with_free_space)
-        blocks = blocks_replace(blocks, offset, new_addr)
+        replacements[label] = new_addr
         hex_chunks[i][0] = new_addr
         last = address_with_free_space + length + post_pad # padding TODO: user configurable
-        offsets_found_log += (offset + ' - ' +
+        offsets_found_log += (label + ' - ' +
                               hex(address_with_free_space) + '\n')
+
+    blocks = blocks_replace(blocks, replacements)
     return blocks, offsets_found_log
 
 def write_hex_script(hex_scripts, rom_file_name):
