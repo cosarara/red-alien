@@ -377,7 +377,15 @@ def make_bytecode(script_list, cmd_table, have_dynamic, have_labels,
                     continue
                 if command == '#word':
                     assert_argn(1)
-                    bytecode += parse_int(args[0]).to_bytes(4, "little")
+                    arg = args[0]
+                    if arg[0] in "@:":
+                        if arg[0] == "@" and have_dynamic is None:
+                            raise Exception("@label without #dyn at {}".format(line))
+                        if arg[0] == ":" and not have_labels:
+                            raise Exception(":label {} not defined at {}".format(arg, line))
+                        bytecode += b'\x00\x00\x00\x00'
+                    else:
+                        bytecode += parse_int(args[0]).to_bytes(4, "little")
                     continue
             except OverflowError:
                 raise Exception("arg {} too big for {} at {}".format(
