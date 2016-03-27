@@ -341,7 +341,7 @@ def separate_scripts(cleanlines): #, end_commands=("end", "softend"),
             block_list[-1].lines.append(line)
     return block_list, dyn
 
-def make_bytecode(script_list, cmd_table, have_dynamic, incbin_path):
+def make_bytecode(script_list, cmd_table, have_dynamic, have_labels, incbin_path):
     ''' Compile list of ScriptBlock '''
     hex_scripts = []
     Label = namedtuple("Label", ['name', 'offset'])
@@ -427,6 +427,8 @@ def make_bytecode(script_list, cmd_table, have_dynamic, incbin_path):
                 else:
                     if arg[0] == "@" and have_dynamic is None:
                         raise Exception("@label without #dyn at {}".format(line))
+                    if arg[0] == ":" and not have_labels:
+                        raise Exception(":label {} not defined at {}".format(arg, line))
                     # this pass
                     # is just for calculating space,
                     # so we fill this with dummy bytes
@@ -527,7 +529,7 @@ def assemble(script, rom_file_name, include_path, cmd_table=pk.pkcommands):
     blocks, dyn = separate_scripts(script)
     #vpdebug(parsed_script)
     debug("compiling down to bytecode...")
-    hex_script = make_bytecode(blocks, cmd_table, dyn, include_path)
+    hex_script = make_bytecode(blocks, cmd_table, dyn, True, include_path)
     debug(hex_script)
     log = ''
     debug("doing dynamic and label things...")
@@ -546,7 +548,7 @@ def assemble(script, rom_file_name, include_path, cmd_table=pk.pkcommands):
 
     #parsed_script, dyn = asm_parse(script, cmd_table=cmd_table)
     debug("recompiling")
-    hex_script = make_bytecode(blocks, cmd_table, None, include_path)
+    hex_script = make_bytecode(blocks, cmd_table, None, False, include_path)
 
     # Remove the labels list, which will be empty and useless now
     for chunk in hex_script:

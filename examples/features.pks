@@ -34,12 +34,12 @@ end
           // Unless you use #org @whatever
 
 :bg2_bad
-= But you didn't get the 2nd\none...\xFF
+= But you didn't get the 2nd\none...\hFF
 
-:bg2_bad2
-= But you didn't get the 2nd\none...
-
-// See? No terminating ff here, since it will be separated from the next one automagically
+// This one doesn't need a terminating byte because what's next
+// will be padded (#org).
+:bg2_good
+= But you did get the 2nd\none...
 
 #org @good // It's an ugly-ass traditional string!
 = You are good man\pYou are pretty good.\pI think we should go have something to drink
