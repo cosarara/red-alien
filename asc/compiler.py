@@ -458,7 +458,7 @@ def blocks_replace(blocks, replacements):
     r = replacements
     return [
         SourceBlock(
-            block.origin,
+            r[block.origin] if block.origin in r else block.origin,
             [CleanLine(
                 [line.items[0]] +
                 [r[item] if item in r else item for item in line.items[1:]],
