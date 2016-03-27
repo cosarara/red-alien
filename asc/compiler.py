@@ -75,9 +75,9 @@ def preprocess(source_lines, include_path=('.')):
             if removing:
                 continue
             if command == "#ifdef":
-                removing = args[0] in symbols
+                removing = not any(args[0] == sym.name for sym in symbols)
             elif command == "#ifndef":
-                removing = args[0] not in symbols
+                removing = any(args[0] == sym.name for sym in symbols)
             else:
                 raise Exception("unknown #if thing at {}".format(line))
             if removing:
