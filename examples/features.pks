@@ -10,16 +10,16 @@ checkflag EM_BADGE1
 if 0 jump :ya_noob // Wild PKSV/C-style labels appeared
 msgbox @good 6 // Wild XSE compatibility appeared!
 if (! EM_BADGE2 ) {
-	msgbox :bg2_bad
+	loadpointer :bg2_bad
 	callstd 6
 } else {
-	msgbox :bg2_good
+	loadpointer :bg2_good
 	callstd 6
 }
 jump :end
 
 :ya_noob
-msgbox :msg_nuv // yes, it's using a label for the msg
+loadpointer :msg_nuv // yes, it's using a label for the msg
 callstd 6
 :end
 disappear THAT_GUY // It's a PKSV command with a constant!
