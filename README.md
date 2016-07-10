@@ -13,15 +13,20 @@ features.
 ## Running
 
 Red Alien is built using cross-platform technologies, so it should run
-everywhere. I build [windows binaries] every now and again.
+everywhere. I build [windows binaries] every now and then.
+Arch users can install its [AUR] package.
+There is a *very* old build for Mac OSX which I don't recommend using;
+run it from source instead. Same on other linux distributions or
+operating systems.
 
 [windows binaries]: http://www.cosarara.me/redalien/#windows
+[AUR]: https://aur.archlinux.org/packages/red-alien-git/
 
 Red alien is written in python and can be run directly from the
 source files if you have all the dependencies installed:
 
-* python3
-* pyqt
+* Python 3
+* PyQt 5
 * python-qscintilla
 
 It can be installed system-wide (although it's not needed):
