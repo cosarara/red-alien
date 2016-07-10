@@ -37,7 +37,7 @@
      <x>0</x>
      <y>0</y>
      <width>562</width>
-     <height>18</height>
+     <height>22</height>
     </rect>
    </property>
    <widget class="QMenu" name="menuFile">
@@ -72,7 +72,7 @@
    </widget>
    <widget class="QMenu" name="menuROM">
     <property name="title">
-     <string>ROM</string>
+     <string>RO&amp;M</string>
     </property>
     <addaction name="actionDecompile"/>
     <addaction name="actionCompile"/>
@@ -83,6 +83,8 @@
      <string>Help</string>
     </property>
     <addaction name="actionAbout"/>
+    <addaction name="actionManual"/>
+    <addaction name="actionCommand_Help"/>
    </widget>
    <widget class="QMenu" name="menuSettings">
     <property name="title">
@@ -150,10 +152,16 @@
    <property name="text">
     <string>&amp;Undo</string>
    </property>
+   <property name="shortcut">
+    <string>Ctrl+Z</string>
+   </property>
   </action>
   <action name="actionRedo">
    <property name="text">
     <string>&amp;Redo</string>
+   </property>
+   <property name="shortcut">
+    <string>Ctrl+Shift+Z</string>
    </property>
   </action>
   <action name="actionDecompile">
@@ -196,6 +204,19 @@
    </property>
    <property name="shortcutContext">
     <enum>Qt::ApplicationShortcut</enum>
+   </property>
+  </action>
+  <action name="actionManual">
+   <property name="text">
+    <string>&amp;Manual (web)</string>
+   </property>
+  </action>
+  <action name="actionCommand_Help">
+   <property name="text">
+    <string>Command Help</string>
+   </property>
+   <property name="shortcut">
+    <string>F1</string>
    </property>
   </action>
  </widget>

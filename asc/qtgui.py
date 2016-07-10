@@ -1,8 +1,8 @@
 # -*- coding: utf-8 -*-
 
-# Form implementation generated from reading ui file 'asc.ui'
+# Form implementation generated from reading ui file 'asc/asc.ui'
 #
-# Created by: PyQt5 UI code generator 5.4.1
+# Created by: PyQt5 UI code generator 5.6
 #
 # WARNING! All changes made in this file will be lost!
 
@@ -26,7 +26,7 @@ class Ui_MainWindow(object):
         self.verticalLayout.addWidget(self.textEdit)
         MainWindow.setCentralWidget(self.centralwidget)
         self.menubar = QtWidgets.QMenuBar(MainWindow)
-        self.menubar.setGeometry(QtCore.QRect(0, 0, 562, 18))
+        self.menubar.setGeometry(QtCore.QRect(0, 0, 562, 22))
         self.menubar.setObjectName("menubar")
         self.menuFile = QtWidgets.QMenu(self.menubar)
         self.menuFile.setObjectName("menuFile")
@@ -80,6 +80,10 @@ class Ui_MainWindow(object):
         self.actionInsert_String = QtWidgets.QAction(MainWindow)
         self.actionInsert_String.setShortcutContext(QtCore.Qt.ApplicationShortcut)
         self.actionInsert_String.setObjectName("actionInsert_String")
+        self.actionManual = QtWidgets.QAction(MainWindow)
+        self.actionManual.setObjectName("actionManual")
+        self.actionCommand_Help = QtWidgets.QAction(MainWindow)
+        self.actionCommand_Help.setObjectName("actionCommand_Help")
         self.menuFile.addAction(self.actionNew)
         self.menuFile.addAction(self.actionOpen)
         self.menuFile.addSeparator()
@@ -104,6 +108,8 @@ class Ui_MainWindow(object):
         self.menuROM.addAction(self.actionCompile)
         self.menuROM.addAction(self.actionDebug)
         self.menuHelp.addAction(self.actionAbout)
+        self.menuHelp.addAction(self.actionManual)
+        self.menuHelp.addAction(self.actionCommand_Help)
         self.menubar.addAction(self.menuFile.menuAction())
         self.menubar.addAction(self.menuEdit.menuAction())
         self.menubar.addAction(self.menuROM.menuAction())
@@ -118,7 +124,7 @@ class Ui_MainWindow(object):
         MainWindow.setWindowTitle(_translate("MainWindow", "Advanced Script Compiler"))
         self.menuFile.setTitle(_translate("MainWindow", "Fi&le"))
         self.menuEdit.setTitle(_translate("MainWindow", "E&dit"))
-        self.menuROM.setTitle(_translate("MainWindow", "ROM"))
+        self.menuROM.setTitle(_translate("MainWindow", "RO&M"))
         self.menuHelp.setTitle(_translate("MainWindow", "Help"))
         self.menuSettings.setTitle(_translate("MainWindow", "Setti&ngs"))
         self.actionNew.setText(_translate("MainWindow", "&New"))
@@ -132,7 +138,9 @@ class Ui_MainWindow(object):
         self.actionPaste.setText(_translate("MainWindow", "&Paste"))
         self.actionDelete.setText(_translate("MainWindow", "&Delete"))
         self.actionUndo.setText(_translate("MainWindow", "&Undo"))
+        self.actionUndo.setShortcut(_translate("MainWindow", "Ctrl+Z"))
         self.actionRedo.setText(_translate("MainWindow", "&Redo"))
+        self.actionRedo.setShortcut(_translate("MainWindow", "Ctrl+Shift+Z"))
         self.actionDecompile.setText(_translate("MainWindow", "&Decompile"))
         self.actionCompile.setText(_translate("MainWindow", "&Compile"))
         self.actionDebug.setText(_translate("MainWindow", "D&ebug"))
@@ -141,5 +149,8 @@ class Ui_MainWindow(object):
         self.actionFind.setShortcut(_translate("MainWindow", "Ctrl+F"))
         self.actionInsert_String.setText(_translate("MainWindow", "&Insert String"))
         self.actionInsert_String.setShortcut(_translate("MainWindow", "Ctrl+B"))
+        self.actionManual.setText(_translate("MainWindow", "&Manual (web)"))
+        self.actionCommand_Help.setText(_translate("MainWindow", "Command Help"))
+        self.actionCommand_Help.setShortcut(_translate("MainWindow", "F1"))
 
 from PyQt5 import Qsci

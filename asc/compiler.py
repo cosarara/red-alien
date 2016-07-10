@@ -14,7 +14,7 @@ Line = namedtuple('Line', ['file_name', 'line_num', 'text'])
 CleanLine = namedtuple('CleanLine', ['items', 'source_line'])
 
 def print_source_location(self):
-    return "line at {}:{} - {}\n{}".format(self.source_line.file_name,
+    return "{}:{} - {}\n{}".format(self.source_line.file_name,
                                            self.source_line.line_num,
                                            self.items,
                                            self.source_line.text)
@@ -286,11 +286,11 @@ def compile_script(text, include_path, filename):
     lines, symbols = preprocess(get_source_lines(text, filename), include_path)
     return highlevel(separate_multilines(lines)), symbols
 
-def parse_int(nn):
+def parse_int(nn, line=""):
     try:
         n = int(literal_eval(nn))
-    except TypeError:
-        raise Exception("Bad number {}, {}".format(n, nn))
+    except (TypeError, SyntaxError, ValueError):
+        raise Exception("Bad number {} at {}".format(nn, line))
     return n
 
 def separate_scripts(cleanlines): #, end_commands=("end", "softend"),
@@ -314,7 +314,7 @@ def separate_scripts(cleanlines): #, end_commands=("end", "softend"),
                 raise Exception("second #dyn seen at {}".format(line))
             if len(args) != 1:
                 raise Exception("wrong number of args for #dyn at {}".format(line))
-            dyn = parse_int(args[0])
+            dyn = parse_int(args[0], line)
         else:
             if len(block_list) == 0:
                 raise Exception("something without previous #org at {}".format(line))
@@ -369,11 +369,11 @@ def make_bytecode(script_list, cmd_table, have_dynamic, have_labels,
             try:
                 if command == '#raw' or command == "#byte":
                     assert_argn(1)
-                    bytecode += parse_int(args[0]).to_bytes(1, "little")
+                    bytecode += parse_int(args[0], line).to_bytes(1, "little")
                     continue
                 if command == '#hword':
                     assert_argn(1)
-                    bytecode += parse_int(args[0]).to_bytes(2, "little")
+                    bytecode += parse_int(args[0], line).to_bytes(2, "little")
                     continue
                 if command == '#word':
                     assert_argn(1)
@@ -385,7 +385,7 @@ def make_bytecode(script_list, cmd_table, have_dynamic, have_labels,
                             raise Exception(":label {} not defined at {}".format(arg, line))
                         bytecode += b'\x00\x00\x00\x00'
                     else:
-                        bytecode += parse_int(args[0]).to_bytes(4, "little")
+                        bytecode += parse_int(args[0], line).to_bytes(4, "little")
                     continue
             except OverflowError:
                 raise Exception("arg {} too big for {} at {}".format(
@@ -415,7 +415,7 @@ def make_bytecode(script_list, cmd_table, have_dynamic, have_labels,
             for i, arg in enumerate(args):
                 if arg[0] != "@" and arg[0] != ":":
                     arg_len = cmd_table[command]["args"][1][i]
-                    arg = parse_int(arg)
+                    arg = parse_int(arg, line)
                     #if arg[0:2] != "0x":
                     #    arg = (int(arg) & 0xffffff)
                     #else:

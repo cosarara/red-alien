@@ -11,6 +11,7 @@ from PyQt5 import QtCore, QtGui, QtWidgets
 from PyQt5 import Qsci
 from .qtgui import Ui_MainWindow
 from . import asc
+from . import pokecommands as pk
 
 class QsciLexerPKS(Qsci.QsciLexerCustom):
     def __init__(self, parent):
@@ -149,27 +150,31 @@ class Window(QtWidgets.QMainWindow):
         self.ui.actionModeOW.setChecked(True)
         self.mode = "ow"
 
-        cons = ((self.ui.actionOpen, self.load_file),
-                (self.ui.actionNew, self.new_file),
-                (self.ui.actionSave, self.save_file),
-                (self.ui.actionSave_As, self.save_as),
-                (self.ui.actionLoad_ROM, self.load_rom),
-                (self.ui.actionQuit, self.close),
-                (self.ui.actionDecompile, self.decompile),
-                (self.ui.actionCompile, self.action_compile),
-                (self.ui.actionDebug, self.action_debug),
-                (self.ui.actionCut, self.ui.textEdit.cut),
-                (self.ui.actionCopy, self.ui.textEdit.copy),
-                (self.ui.actionPaste, self.ui.textEdit.paste),
-                (self.ui.actionDelete, self.ui.textEdit.removeSelectedText),
-                (self.ui.actionUndo, self.ui.textEdit.undo),
-                (self.ui.actionRedo, self.ui.textEdit.redo),
-                (self.ui.actionFind, self.find),
-                (self.ui.actionInsert_String, self.insert_string),
-                (self.ui.actionAbout, self.help_about),
-                (self.ui.actionModeOW, self.set_mode_ow),
-                (self.ui.actionModeAI, self.set_mode_ai))
-        for action, function in cons:
+        connections = (
+            (self.ui.actionOpen, self.load_file),
+            (self.ui.actionNew, self.new_file),
+            (self.ui.actionSave, self.save_file),
+            (self.ui.actionSave_As, self.save_as),
+            (self.ui.actionLoad_ROM, self.load_rom),
+            (self.ui.actionQuit, self.close),
+            (self.ui.actionDecompile, self.decompile),
+            (self.ui.actionCompile, self.action_compile),
+            (self.ui.actionDebug, self.action_debug),
+            (self.ui.actionCut, self.ui.textEdit.cut),
+            (self.ui.actionCopy, self.ui.textEdit.copy),
+            (self.ui.actionPaste, self.ui.textEdit.paste),
+            (self.ui.actionDelete, self.ui.textEdit.removeSelectedText),
+            (self.ui.actionUndo, self.ui.textEdit.undo),
+            (self.ui.actionRedo, self.ui.textEdit.redo),
+            (self.ui.actionFind, self.find),
+            (self.ui.actionInsert_String, self.insert_string),
+            (self.ui.actionAbout, self.help_about),
+            (self.ui.actionManual, self.manual),
+            (self.ui.actionCommand_Help, self.command_help),
+            (self.ui.actionModeOW, self.set_mode_ow),
+            (self.ui.actionModeAI, self.set_mode_ai))
+
+        for action, function in connections:
             action.triggered.connect(function)
 
         self.rom_file_name = ""
@@ -182,6 +187,11 @@ class Window(QtWidgets.QMainWindow):
         lexer = QsciLexerPKS(self.ui.textEdit)
         lexer.setDefaultFont(self.font)
         self.ui.textEdit.setLexer(lexer)
+
+        self.api = Qsci.QsciAPIs(lexer)
+        self.set_autocompletion()
+        self.ui.textEdit.setAutoCompletionThreshold(1)
+        self.ui.textEdit.setAutoCompletionSource(Qsci.QsciScintilla.AcsAPIs)
 
         self.ui.textEdit.setText(asc.get_canvas())
 
@@ -288,7 +298,6 @@ class Window(QtWidgets.QMainWindow):
                 except ValueError:
                     QtWidgets.QMessageBox.critical(self, "Error", "Invalid offset")
                     return
-        from . import pokecommands as pk
         cmd, dec, end = {
             "ow": (pk.pkcommands, pk.dec_pkcommands, pk.end_pkcommands),
             "ai": (pk.aicommands, pk.dec_aicommands, pk.end_aicommands),
@@ -312,7 +321,6 @@ class Window(QtWidgets.QMainWindow):
         include_path = (".", os.path.dirname(self.rom_file_name),
                         os.path.dirname(self.file_name), asc.get_program_dir(),
                         asc.data_path)
-        from . import pokecommands as pk
         cmd, dec, end = {
             "ow": (pk.pkcommands, pk.dec_pkcommands, pk.end_pkcommands),
             "ai": (pk.aicommands, pk.dec_aicommands, pk.end_aicommands),
@@ -335,10 +343,12 @@ class Window(QtWidgets.QMainWindow):
             QtWidgets.QMessageBox.information(
                 self, "Done!", "Script compiled and written successfully")
         else:
-            LogPopup(self, asc.nice_dbg_output(hex_script))
+            LogPopup(self, "\n".join(" ".join(a.items) for a in cleanlines),
+                     "Expanded script")
+            LogPopup(self, asc.nice_dbg_output(hex_script), "hex output")
 
         if log:
-            LogPopup(self, log)
+            LogPopup(self, log, "address log")
 
     def help_about(self):
         QtWidgets.QMessageBox.about(self, "About Red Alien",
@@ -346,6 +356,20 @@ class Window(QtWidgets.QMainWindow):
                                      "the Advanced Pokémon Script Compiler\n"
                                      "Copyright © 2012-2016 Jaume Delclòs Coll\n"
                                      "(aka cosarara97)"))
+
+    def manual(self):
+        QtGui.QDesktopServices.openUrl(
+            QtCore.QUrl("http://www.cosarara.me/redalien/manual/"))
+
+    def command_help(self):
+        line_n, _ = self.ui.textEdit.getCursorPosition()
+        text = self.ui.textEdit.text()
+        try:
+            line = text.split('\n')[line_n]
+            cmd = line.split()[0]
+        except Exception:
+            cmd = ""
+        CommandHelpDialog(self, self.mode, cmd)
 
     def find(self):
         startline, starti = self.ui.textEdit.getCursorPosition()
@@ -385,21 +409,40 @@ class Window(QtWidgets.QMainWindow):
         text = self.ui.textEdit.text()
         i = asc.find_nth(text, "\n", line)
         to_insert = "".join(["= " + l + "\n" for l in popup.text.split("\n")])
-        self.ui.textEdit.setText(text[:i] + to_insert + text[i:])
+        #self.ui.textEdit.setText(text[:i] + to_insert + text[i:])
+        self.ui.textEdit.insert(to_insert)
         print(popup.text)
 
     def set_mode_ow(self):
         self.mode = "ow"
         print(self.mode)
+        self.set_autocompletion()
 
     def set_mode_ai(self):
         self.mode = "ai"
         print(self.mode)
+        self.set_autocompletion()
+
+    def set_autocompletion(self):
+        api = self.api
+        api.clear()
+        cmds = {
+            "ow": pk.pkcommands,
+            "ai": pk.aicommands,
+        }[self.mode]
+
+        for c in cmds:
+            api.add(c)
+
+        api.prepare()
+
 
 class LogPopup(QtWidgets.QDialog):
-    def __init__(self, parent=None, text=""):
+    def __init__(self, parent=None, text="", title=None):
         QtWidgets.QDialog.__init__(self, parent)
 
+        if title is not None:
+            self.setWindowTitle(title)
         self.resize(400, 300)
 
         vbox = QtWidgets.QVBoxLayout()
@@ -413,7 +456,7 @@ class LogPopup(QtWidgets.QDialog):
         vbox.addWidget(quit_button)
 
         self.setLayout(vbox)
-        self.show()
+        self.exec_()
 
 class InsertTextBoxPopup(QtWidgets.QDialog):
     def __init__(self, parent=None, text=""):
@@ -454,6 +497,81 @@ class InsertTextBoxPopup(QtWidgets.QDialog):
         self.close()
         self.text = self.textedit.text()
         return
+
+class CommandHelpDialog(QtWidgets.QDialog):
+    def __init__(self, parent, mode, cmd):
+        QtWidgets.QDialog.__init__(self, parent)
+        self.resize(400, 300)
+        vbox = QtWidgets.QVBoxLayout()
+        self.setLayout(vbox)
+        combo = QtWidgets.QComboBox()
+        self.combo = combo
+        vbox.addWidget(combo)
+        self.cmds = {
+            "ow": pk.pkcommands,
+            "ai": pk.aicommands,
+        }[mode]
+        self.command_list = sorted(list(self.cmds))
+        for command in self.command_list:
+            combo.addItem(command)
+        combo.currentIndexChanged.connect(self.changed)
+        self.text = QtWidgets.QTextEdit()
+        self.text.setReadOnly(True)
+        vbox.addWidget(self.text)
+
+        edit = QtWidgets.QLineEdit()
+        self.edit = edit
+        edit.setPlaceholderText("search")
+        completer = QtWidgets.QCompleter()
+        completer.setCompletionMode(
+            QtWidgets.QCompleter.UnfilteredPopupCompletion)
+        edit.setCompleter(completer)
+        model = QtCore.QStringListModel()
+        completer.setModel(model)
+        model.setStringList(self.command_list)
+        vbox.addWidget(edit)
+        edit.returnPressed.connect(self.search_changed)
+        edit.textChanged.connect(self.search_changed)
+
+        self.show()
+
+        if cmd:
+            self.edit.setText(cmd)
+
+    def changed(self, n):
+        self.edit.setText(self.command_list[n])
+
+    def search_changed(self, *args):
+        text = str(self.edit.text())
+        try:
+            n = int(text)
+        except ValueError:
+            n = None
+
+        cmd = text
+
+        if n is not None:
+            for c in self.cmds:
+                if "hex" in self.cmds[c] and self.cmds[c]["hex"] == n:
+                    cmd = c
+                    break
+
+        if not cmd in self.command_list:
+            return
+
+        self.combo.setCurrentIndex(self.command_list.index(cmd))
+        text = "<h1>{}</h1>".format(cmd)
+        if "args" in self.cmds[cmd]:
+            text += "<ul>"
+            print(self.cmds[cmd]["args"])
+
+            descriptions, lengths = self.cmds[cmd]["args"][0:2]
+            descriptions = descriptions.split(", ")
+            for n, l in enumerate(lengths):
+                text += "<li>{} - {} bytes</li>".format(descriptions[n], l)
+            text += "</ul>"
+
+        self.text.setHtml(text)
 
 class AIScriptGetAddressPopup(QtWidgets.QDialog):
     def __init__(self, parent, rom_file_name, code):
