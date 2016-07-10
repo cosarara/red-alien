@@ -192,6 +192,7 @@ class Window(QtWidgets.QMainWindow):
         self.set_autocompletion()
         self.ui.textEdit.setAutoCompletionThreshold(1)
         self.ui.textEdit.setAutoCompletionSource(Qsci.QsciScintilla.AcsAPIs)
+        self.ui.textEdit.setAutoIndent(True)
 
         self.ui.textEdit.setText(asc.get_canvas())
 
