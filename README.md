@@ -1,4 +1,4 @@
-= The Red Alien Pokémon Script Compiler
+# The Red Alien Pokémon Script Compiler
 
 This is the source repository for [Red Alien], a
 compiler for the scripting system found in GBA Pokémon games.
@@ -10,7 +10,7 @@ features.
 [documentation]: http://www.cosarara.me/redalien/#docs
 [examples]: examples/
 
-== Running
+## Running
 
 Red Alien is built using cross-platform technologies, so it should run
 everywhere. I build [windows binaries] every now and again.
@@ -34,7 +34,7 @@ If you want pks syntax highlighting in vim, you can copy utils/pks.vim to
 $HOME/.vim/syntax/, and add the following line to your .vimrc:
 autocmd BufRead,BufNewFile *.pks set filetype=pks
 
-== Acknowledgements
+## Acknowledgements
 
 Most of the command's information was taken from PKSV's pokedef.h (Thanks!)
 
