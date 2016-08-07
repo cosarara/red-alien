@@ -326,10 +326,12 @@ class Window(QtWidgets.QMainWindow):
             "ow": (pk.pkcommands, pk.dec_pkcommands, pk.end_pkcommands),
             "ai": (pk.aicommands, pk.dec_aicommands, pk.end_aicommands),
         }[self.mode]
+        game = asc.get_game(self.rom_file_name)
         try:
             cleanlines, symbols = asc.compile_script(script,
                                                      include_path,
-                                                     self.file_name or "current_script")
+                                                     self.file_name or "current_script",
+                                                     game)
             hex_script, log = asc.assemble(cleanlines,
                                            self.rom_file_name,
                                            include_path,

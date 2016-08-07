@@ -95,14 +95,16 @@ def find_nth(text, string, n):
     return start
 
 
-def get_base_directive(rom_fn):
+def get_game(rom_fn):
     with open(rom_fn, "rb") as f:
         f.seek(0xAC)
         code = f.read(4)
-    return "#define " + {
-        b"AXVE": "RS",
-        b"BPRE": "FR",
-        b"BPEE": "EM"}[code] + "\n"
+    try:
+        return {b"AXVE": "RS",
+                b"BPRE": "FR",
+                b"BPEE": "EM"}[code]
+    except KeyError:
+        return None
 
 def nice_dbg_output(hex_scripts):
     text = ''
@@ -207,14 +209,11 @@ def main():
         script = open_script(args.script)
         vdebug(script)
         debug("compiling high-level stuff...")
-        try:
-            script = get_base_directive(args.rom) + script
-        except KeyError:
-            pass
+        game = get_game(args.rom)
         include_path = ("", ".", os.path.dirname(args.rom),
                         os.path.dirname(args.script), get_program_dir(),
                         data_path, os.path.join(data_path, "stdlib"))
-        cleanlines, symbols = compile_script(script, include_path, args.script)
+        cleanlines, symbols = compile_script(script, include_path, args.script, game)
         if utils.VERBOSE:
             print("\nscript compiled down to asm:")
             compiler.print_lines(cleanlines)

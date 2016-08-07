@@ -37,8 +37,10 @@ def remove_comments(text):
                       for s in text.split("\n")])
     return text
 
-def preprocess(source_lines, include_path=('.')):
+def preprocess(source_lines, include_path, game):
     symbols = {}
+    if game:
+        symbols = {game: True}
     out = []
     removing = False # inside false #ifdef, etc.
     # can't iterate because we'll mutate the list
@@ -278,11 +280,11 @@ def highlevel(cleanlines):
             cleanlines[start_n:n] = to_insert
     return cleanlines
 
-def compile_script(text, include_path, filename):
+def compile_script(text, include_path, filename, game):
     """ goes from text to a list of CleanLine's,
     each with a list of simple items:
     #org, #dyn, #raw, commands, :labels and = lines"""
-    lines, symbols = preprocess(get_source_lines(text, filename), include_path)
+    lines, symbols = preprocess(get_source_lines(text, filename), include_path, game)
     return highlevel(separate_multilines(lines)), symbols
 
 def parse_int(nn, line=""):
