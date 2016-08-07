@@ -263,7 +263,7 @@ def decompile_movs(romtext, offset, end_hex_commands=(0xFE, 0xFF), raw=False):
 
         if hex_command in moves:
             textscript += moves[hex_command]
-            includes = ["stdmoves.rbh"]
+            includes = ["stdlib/stdmoves.rbh"]
         else:
             textscript += "#raw " + hex(hex_command)
         i += 1
