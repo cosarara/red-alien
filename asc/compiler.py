@@ -105,8 +105,6 @@ def preprocess(source_lines, include_path=('.')):
 
         for symbol in symbols:
             value = symbols[symbol]
-            if symbol in clean_line:
-                replaced = True
             items = clean_line.split()
             if items[0] == symbol and "$" in value:
                 args = items[1:]
@@ -115,7 +113,8 @@ def preprocess(source_lines, include_path=('.')):
                     new_line = new_line.replace("$"+str(arg_n+1), arg)
                 clean_line = new_line
             else:
-                clean_line = clean_line.replace(symbol, str(value))
+                clean_line = " ".join(
+                    [str(value) if item == symbol else item for item in items])
         for l in clean_line.split(';'):
             if not l:
                 continue
