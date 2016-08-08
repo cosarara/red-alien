@@ -120,7 +120,11 @@ def preprocess(source_lines, include_path, game):
         for l in clean_line.split(';'):
             if not l:
                 continue
-            out.append(CleanLine(l.split(), line))
+            l_items = l.split()
+            if l_items and l_items[0] == '=':
+                out.append(CleanLine(['=', l[l.find('=')+2:]], line))
+            else:
+                out.append(CleanLine(l.split(), line))
     return out, symbols
 
 last_id = 0
@@ -362,7 +366,7 @@ def make_bytecode(script_list, cmd_table, have_dynamic, have_labels,
                         "wrong arg number, expected {} and got {} at {}".format(
                             expected_args, len(args), line))
             if command == '=':
-                text = ''.join(args)
+                text = line.items[1]
                 bytecode += text_translate.ascii_to_hex(text)
                 if end_strings:
                     bytecode += b'\xff'
