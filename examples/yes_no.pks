@@ -1,3 +1,4 @@
+#define msgbox loadptr $1 ; callstd $2
 #define LASTRESULT 0x8000
 #dynamic 0x800000
 #org @main
