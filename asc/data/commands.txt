@@ -134,7 +134,8 @@
     "faceplayer": {"hex": 0x5A},
     "spriteface": {"hex": 0x5B, "args": ("sprite, face", (2, 1))},
     "trainerbattle": {"hex": 0x5C, "args": ("kind, num, ?, startmsg, defeatmsg",
-                                            (1, 2, 2, 4, 4))},
+                                            (1, 2, 2, 4, 4)),
+                      "offset": [(3, "text"), (4, "text")]},
     "lasttrainerbattle": {"hex": 0x5D},
     "endtrainerbattle": {"hex": 0x5E},
     "endtrainerbattle2": {"hex": 0x5F}, # TODO: Ask ASM guru difference
