@@ -77,12 +77,10 @@ def decompile(file_name, offset, type_="script", raw=False,
             raise Exception('This seems too long, crashing for your safety')
     return textscript
 
-def const_arg(cmd, arg, arg_i, cmd_table, dec_table, rombytes, history):
-    cmd_data = cmd_table[cmd]
-    #print(cmd)
-    types = cmd_data["args"][0]
-    #sizes = cmd_data["args"][1]
-    type = types.split(",")[arg_i].strip()
+def get_const_replacements():
+    """
+    Fetch all constants from header files to use in const_arg
+    """
     intt = lambda a: int(a, 16) if a.startswith("0x") else int(a)
     # abilities
     with open(os.path.join(data_path, "stdlib", "stdabilities.rbh")) as f:
@@ -112,9 +110,19 @@ def const_arg(cmd, arg, arg_i, cmd_table, dec_table, rombytes, history):
     effects = {intt(a.split()[2]): a.split()[1]
                for a in effects.split("\n")}
     args_for_type["movescriptid"] = effects
-    #
-    with open(os.path.join(data_path, "stdlib", "stdargs.rbh")) as f:
-        attacks = f.read().strip().split("\n")
+    return args_for_type
+
+args_for_type = get_const_replacements()
+
+def const_arg(cmd, arg, arg_i, cmd_table, dec_table, rombytes, history):
+    """ Translates an argument to a suitable constant
+    TODO: make it work with non-AI scripts
+    """
+    cmd_data = cmd_table[cmd]
+    #print(cmd)
+    types = cmd_data["args"][0]
+    #sizes = cmd_data["args"][1]
+    type = types.split(",")[arg_i].strip()
     if cmd_table == pk.aicommands:
         if cmd[:3] == "bvb" and type == "byte":
             if "getability" in history: # todo: find latest relevant thing
