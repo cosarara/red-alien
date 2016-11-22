@@ -223,6 +223,9 @@ class Window(QtWidgets.QMainWindow):
 
         with open(fn, 'r') as f:
             text = f.read()
+            # Scintilla doesn't use a trailing newline
+            if text and text[-1] == "\n":
+                text = text[:-1]
             self.ui.textEdit.setText(text)
         self.ui.statusbar.showMessage("loaded " + fn)
 
@@ -248,7 +251,8 @@ class Window(QtWidgets.QMainWindow):
             self.save_as()
         fn = self.file_name
         with open(fn, 'w') as f:
-            f.write(self.ui.textEdit.text())
+            # Scintilla doesn't use a trailing newline
+            f.write(self.ui.textEdit.text() + "\n")
         self.ui.statusbar.showMessage("file saved as " + fn)
 
     def load_rom(self):
@@ -647,6 +651,9 @@ def main():
         win.file_name = args.file
         with open(args.file, 'r') as f:
             text = f.read()
+            # Scintilla doesn't use a trailing newline
+            if text and text[-1] == "\n":
+                text = text[:-1]
         win.ui.textEdit.setText(text)
     elif args.offset:
         win.rom_file_name = args.file
