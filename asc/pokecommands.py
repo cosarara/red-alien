@@ -35,9 +35,9 @@ def dec_table(cmds):
     "Make a decompilation table from a compilation table"
     dec_pkcommands = {}
 
-    for command in cmds:
-        if "hex" in cmds[command]:
-            dec_pkcommands[cmds[command]["hex"]] = command
+    for name, cmd in cmds.items():
+        if "hex" in cmd:
+            dec_pkcommands[cmd["hex"]] = name
     return dec_pkcommands
 
 def make_tables(fn):

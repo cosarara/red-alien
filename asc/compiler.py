@@ -114,7 +114,7 @@ def preprocess(source_lines, include_path, game):
                 for arg_n, arg in enumerate(args):
                     new_line = new_line.replace("$"+str(arg_n+1), arg)
                 clean_line = new_line
-            else:
+            elif not (clean_line and clean_line[0] == "="):
                 clean_line = " ".join(
                     [str(value) if item == symbol else item for item in items])
         for l in clean_line.split(';'):
