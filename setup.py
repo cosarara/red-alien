@@ -34,7 +34,7 @@ basecli = None
 if sys.platform == "win32":
     base = "Win32GUI"
 
-setup(name='Blue Spider',
+setup(name='Red Alien',
       version=version,
       description="The Pokemon Advanced Script Compiler for GBA",
       author="Jaume (cosarara97) Delclòs",
