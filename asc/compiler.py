@@ -514,7 +514,7 @@ def put_addresses(hex_chunks, blocks, file_name, dynamic_start, pre_pad, post_pa
             print(last)
             raise Exception("No free space to put script.")
         new_addr = hex(address_with_free_space)
-        replacements[label] = new_addr
+        replacements[label] = hex(address_with_free_space + 0x8000000)
         hex_chunks[i][0] = new_addr
         last = address_with_free_space + length + post_pad # padding TODO: user configurable
         offsets_found_log += (label + ' - ' +
