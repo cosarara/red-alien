@@ -412,14 +412,17 @@ def make_bytecode(script_list, cmd_table, have_dynamic, have_labels,
             if command not in cmd_table:
                 raise Exception("command {} not found at {}".format(command, line))
 
-            expected_args = len(cmd_table[command]["args"][1])
+            arg_data = cmd_table[command]["args"][1]
+            if "vargs" in cmd_table[command]:
+                arg_data = cmd_table[command]["vargs"]([parse_int(args[0], line)])
+            expected_args = len(arg_data)
             if command != '=':
                 assert_argn(expected_args)
             hexcommand = cmd_table[command]["hex"]
             hexargs = bytearray()
             for i, arg in enumerate(args):
                 if arg[0] != "@" and arg[0] != ":":
-                    arg_len = cmd_table[command]["args"][1][i]
+                    arg_len = arg_data[i]
                     arg = parse_int(arg, line)
                     #if arg[0:2] != "0x":
                     #    arg = (int(arg) & 0xffffff)
@@ -429,13 +432,17 @@ def make_bytecode(script_list, cmd_table, have_dynamic, have_labels,
                         for o in cmd_table[command]["offset"]:
                             if o[0] == i:
                                 arg |= 0x8000000
+                    if "vptr" in cmd_table[command]:
+                        for o in cmd_table[command]["vptr"]([parse_int(args[0], line)]):
+                            if o[0] == i:
+                                arg |= 0x8000000
                     try:
                         arg_bytes = arg.to_bytes(arg_len, "little")
                     except OverflowError:
                         raise Exception("arg {} too big for len {} at {}".format(
                             arg, arg_len, line))
 
-                    # what is this? padding? used only on loadpointer?
+                    # padding - used only on loadpointer
                     if len(cmd_table[command]["args"]) == 3:
                         arg_bytes = (cmd_table[command]["args"][2] +
                                      arg_bytes)

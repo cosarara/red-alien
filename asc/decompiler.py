@@ -168,8 +168,26 @@ def decompile_instruction(rombytes, start_address,
 
     address += 1
     args = []
-    if "args" in cmd:
-        if len(cmd["args"]) == 3:
+    if "vargs" in cmd:
+        type_ = rombytes[address]
+        arg_data = cmd["vargs"]([type_])
+        for n, arg_len in enumerate(arg_data):
+            arg = rombytes[address:address + arg_len]
+            address += arg_len
+            arg = int.from_bytes(arg, "little")
+            if "vptr" in cmd:
+                for o_arg_n, o_type in cmd["vptr"]([type_]):
+                    if o_arg_n == n:
+                        add_chunk(arg, o_type)
+            carg, inc = const_arg(cmd_name, arg, n, cmd_table,
+                                  dec_table, rombytes, "", types="")
+            if carg is None:
+                args.append((arg, hex(arg)))
+            else:
+                args.append((arg, carg))
+
+    elif "args" in cmd:
+        if len(cmd["args"]) == 3: # extra padding, happens only with loadpointer
             address += len(cmd["args"][2])
         for n, arg_len in enumerate(cmd["args"][1]):
             arg = rombytes[address:address + arg_len]
@@ -233,15 +251,19 @@ def get_const_replacements():
 
 args_for_type = get_const_replacements()
 
-def const_arg(cmd, arg, arg_i, cmd_table, dec_table, rombytes, history):
+def const_arg(cmd, arg, arg_i, cmd_table, dec_table, rombytes, history, types=None):
     """ Translates an argument to a suitable constant
     TODO: make it work with non-AI scripts
     """
     cmd_data = cmd_table[cmd]
     #print(cmd)
-    types = cmd_data["args"][0]
+    if types is None:
+        types = cmd_data["args"][0]
     #sizes = cmd_data["args"][1]
-    type = types.split(",")[arg_i].strip()
+    try:
+        type = types.split(",")[arg_i].strip()
+    except IndexError:
+        return None, ""
     if cmd_table == pk.aicommands:
         if cmd[:3] == "bvb" and type == "byte":
             if "getability" in history: # todo: find latest relevant thing
