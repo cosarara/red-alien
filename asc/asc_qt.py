@@ -656,8 +656,9 @@ def main():
                 text = text[:-1]
         win.ui.textEdit.setText(text)
     elif args.offset:
+        print(args.offset)
         win.rom_file_name = args.file
-        win.decompile(int(args.offset, 16))
+        win.decompile(int(args.offset, 16) & 0xFFFFFF)
     sys.exit(app.exec_())
 
 if __name__ == "__main__":
