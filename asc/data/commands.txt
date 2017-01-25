@@ -61,7 +61,7 @@
     "subtractvar": {"hex": 0x18, "args": ("var, value", (2, 2))},
     "copyvar": {"hex": 0x19, "args": ("var, var", (2, 2))},
     "copyvarifnotzero": {"hex": 0x1A, "args": ("var, var", (2, 2))},
-    "comparebuffers": {"hex": 0x1B, "args": ("buffer, buffer", (2, 2))},
+    "comparebanks": {"hex": 0x1B, "args": ("bank, bank", (1, 1))},
     "comparevartobyte": {"hex": 0x1C, "args": ("var, byte", (2, 1))},
     "comparevartofarbyte": {"hex": 0x1D, "args": ("var, adress", (2, 4))},
     "comparefarbytetovar": {"hex": 0x1E, "args": ("adress, var", (4, 2))},
