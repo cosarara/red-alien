@@ -248,7 +248,7 @@ class Window(QtWidgets.QMainWindow):
 
     def save_file(self):
         if not self.file_name:
-            self.save_as()
+            return self.save_as()
         fn = self.file_name
         with open(fn, 'w') as f:
             # Scintilla doesn't use a trailing newline
@@ -303,13 +303,18 @@ class Window(QtWidgets.QMainWindow):
                 except ValueError:
                     QtWidgets.QMessageBox.critical(self, "Error", "Invalid offset")
                     return
+        if offset > os.stat(self.rom_file_name).st_size:
+            offset -= 0x8000000
         cmd, dec, end = {
             "ow": (pk.pkcommands, pk.dec_pkcommands, pk.end_pkcommands),
             "ai": (pk.aicommands, pk.dec_aicommands, pk.end_aicommands),
         }[self.mode]
-        self.ui.textEdit.setText(asc.decompile(self.rom_file_name, offset,
-                                               cmd_table=cmd, dec_table=dec,
-                                               end_commands=end))
+        try:
+            self.ui.textEdit.setText(asc.decompile(self.rom_file_name, offset,
+                                                   cmd_table=cmd, dec_table=dec,
+                                                   end_commands=end))
+        except Exception as e:
+            QtWidgets.QMessageBox.critical(self, "Error", str(e))
 
     def error_message(self, msg):
         QtWidgets.QMessageBox.critical(self, "Error", msg)
