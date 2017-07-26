@@ -35,6 +35,25 @@ def decompile(file_name, start_address, type_="script",
     with open(file_name, "rb") as f:
         rombytes = f.read()
 
+    # build mov table
+    with open(os.path.join(data_path, "stdlib", "stdmoves.rbh")) as f:
+        moves = f.read()
+    moves = moves.split("//@")
+    rom_code = rombytes[0xAC:0xAC+4].decode("ascii", errors="replace")
+    includes = set()
+    for movelist in moves:
+        if (rom_code == "AXVE" and movelist.startswith("applymoves_rs") or
+                rom_code == "BPRE" and movelist.startswith("applymoves_fr")):
+
+            moves = filter(lambda s: "#define" in s,
+                                remove_comments(movelist).split("\n"))
+            moves = {int(value, 16): name
+                     for _, name, _, value in map(str.split, moves)}
+            break
+    else:
+        moves = {}
+
+    # Decompile every chunk, and join redundant chunks
     chunk = Chunk(start_address, type_, None, None)
     chunks = [chunk]
     while True:
@@ -52,12 +71,13 @@ def decompile(file_name, start_address, type_="script",
                         break
                 if c.content is None:
                     c = decompile_chunk(chunk, rombytes, chunks, cmd_table, dec_table,
-                                        end_commands, end_hex_commands, verbose)
+                                        end_commands, end_hex_commands, moves, verbose)
                 chunks[n] = c
                 break
         else:
             break
 
+    # Convert to text
     text = ""
     for chunk in sorted(chunks, key=lambda i: chunk.addr):
         if chunk.length is None:
@@ -82,35 +102,17 @@ def decompile(file_name, start_address, type_="script",
                     text += "#raw 0x{:02X}\n".format(instruction.cmd["hex"])
         elif chunk.type == "text":
             text += split_text(chunk.content)
+        if chunk.type == "movs":
+            includes.add("stdlib/stdmoves.rbh")
 
+    for inc in includes:
+        text = '#include "' + inc + '"\n' + text
     return text
-    #address = start_address
-    #chunks = []
-    #decompile_instruction(rombytes, address, cmd_table, dec_table, chunks)
-
-# TODO: add this for moves or something
-
-#    with open(os.path.join(data_path, "stdlib", "stdmoves.rbh")) as f:
-#        moves = f.read()
-#    moves = moves.split("//@")
-#    rom_code = romtext[0xAC:0xAC+4].decode("ascii")
-#    includes = []
-#    for movelist in moves:
-#        if (rom_code == "AXVE" and movelist.startswith("applymoves_rs") or
-#                rom_code == "BPRE" and movelist.startswith("applymoves_fr")):
-#
-#            moves = list(filter(lambda s: "#define" in s,
-#                                remove_comments(movelist).split("\n")))
-#            moves = {int(value, 16): name
-#                     for _, name, _, value in map(str.split, moves)}
-#            break
-#    else:
-#        moves = {}
 
 def decompile_chunk(chunk, rombytes, chunks,
                     cmd_table=pk.pkcommands, dec_table=pk.dec_pkcommands,
                     end_commands=END_COMMANDS, end_hex_commands=END_HEX_COMMANDS,
-                    verbose=0):
+                    moves={}, verbose=0):
     address = chunk.addr
     content = []
     if chunk.type == "script":
@@ -125,10 +127,13 @@ def decompile_chunk(chunk, rombytes, chunks,
                 break
     elif chunk.type == "movs":
         while True:
-            instruction = decompile_instruction(
-                rombytes, address, {}, {}, chunks, verbose)
-            #print(instruction)
-            address += instruction.length
+            b = rombytes[address]
+            name = None
+            if b in moves:
+                name = moves[b]
+            instruction = Instruction(addr=address, name=name, cmd={"hex": b},
+                                      args=[], length=1)
+            address += 1
             content.append(instruction)
             if (instruction.name in END_COMMANDS or
                     instruction.cmd["hex"] in (0xFE, 0xFF)):
