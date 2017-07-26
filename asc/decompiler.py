@@ -53,29 +53,43 @@ def decompile(file_name, start_address, type_="script",
     else:
         moves = {}
 
-    # Decompile every chunk, and join redundant chunks
     chunk = Chunk(start_address, type_, None, None)
+    todo_chunks = [chunk]
+    done_chunks = []
     chunks = [chunk]
-    while True:
-        for n, chunk in enumerate(chunks):
-            if chunk.length is None and chunk.content is None:
-                c = chunk
-                # look for an already decompiled chunk that holds this chunk inside
-                for chunk2 in chunks:
-                    address = chunk.addr
-                    if chunk2.length is None:
-                        continue
-                    if address > chunk2.addr and address < chunk2.addr+chunk2.length:
-                        #print("skipping: ", hex(address), hex(chunk2.addr), hex(chunk2.length))
-                        c = Chunk(chunk.addr, chunk.type, None, chunk2)
-                        break
-                if c.content is None:
-                    c = decompile_chunk(chunk, rombytes, chunks, cmd_table, dec_table,
-                                        end_commands, end_hex_commands, moves, verbose)
-                chunks[n] = c
-                break
-        else:
+
+    def is_redundant(c, chunks):
+        for c2 in chunks:
+            if c is c2:
+                continue
+            if c.type != c2.type:
+                continue
+            if c.addr == c2.addr:
+                return c2
+            if c2.length is None:
+                continue
+            if c.addr >= c2.addr and c.addr < c2.addr+c2.length:
+                return c2
+        return False
+
+    while todo_chunks:
+        # remove redundant todo chunks:
+        todo_chunks = list(filter(
+            lambda c: not is_redundant(c, todo_chunks+done_chunks),
+            todo_chunks))
+
+        if not todo_chunks:
             break
+
+        # decompile a chunk
+
+        c, nc = decompile_chunk(todo_chunks.pop(), rombytes, chunks, cmd_table, dec_table,
+                                end_commands, end_hex_commands, moves, verbose)
+        todo_chunks += nc
+        done_chunks.append(c)
+
+    chunks = done_chunks
+    chunks = list(filter(lambda c: not is_redundant(c, chunks), chunks))
 
     # Convert to text
     text = ""
@@ -115,10 +129,12 @@ def decompile_chunk(chunk, rombytes, chunks,
                     moves={}, verbose=0):
     address = chunk.addr
     content = []
+    new_chunks = []
     if chunk.type == "script":
         while True:
-            instruction = decompile_instruction(
+            instruction, nc = decompile_instruction(
                 rombytes, address, cmd_table, dec_table, chunks, verbose)
+            new_chunks = new_chunks + nc
             #print(instruction)
             address += instruction.length
             content.append(instruction)
@@ -142,13 +158,13 @@ def decompile_chunk(chunk, rombytes, chunks,
         length = rombytes[chunk.addr:].find(b"\xff")
         content = decompile_text(rombytes, chunk.addr)
     length = address - chunk.addr
-    return Chunk(chunk.addr, chunk.type, length, content)
+    return Chunk(chunk.addr, chunk.type, length, content), new_chunks
 
 def decompile_instruction(rombytes, start_address,
                           cmd_table=pk.pkcommands, dec_table=pk.dec_pkcommands,
                           chunks=[], verbose=0):
+    new_chunks = []
     address = start_address
-    chunk_c = []
     cmd_val = rombytes[address]
     try:
         cmd_name = dec_table[cmd_val]
@@ -157,19 +173,22 @@ def decompile_instruction(rombytes, start_address,
         cmd_name = None
         cmd = {'hex': cmd_val}
 
+    def is_redundant(addr, type_, chunks):
+        for c2 in chunks:
+            if type_ != c2.type:
+                continue
+            if addr == c2.addr:
+                return c2
+            if c2.length is None:
+                continue
+            if addr >= c2.addr and addr < c2.addr+c2.length:
+                return c2
+        return False
+
     def add_chunk(address, type_):
         address &= 0xFFFFFF
-        for chunk in chunks:
-            if type_ != chunk.type:
-                continue
-            if address == chunk.addr:
-                break
-            #if chunk.length is None:
-            #    continue
-            #if address > chunk.addr and address < chunk.addr+chunk.length:
-            #    break
-        else:
-            chunks.append(Chunk(address, type_, None, None))
+        if not is_redundant(address, type_, chunks):
+            new_chunks.append(Chunk(address, type_, None, None))
 
     address += 1
     args = []
@@ -201,6 +220,7 @@ def decompile_instruction(rombytes, start_address,
             if "offset" in cmd:
                 for o_arg_n, o_type in cmd["offset"]:
                     if o_arg_n == n:
+                        #print("adding to do chunk at "+hex(arg)+" of type "+str(o_type)+" in "+str(cmd)+" "+hex(address))
                         add_chunk(arg, o_type)
             carg, inc = const_arg(cmd_name, arg, n, cmd_table,
                                   dec_table, rombytes, "")
@@ -217,7 +237,7 @@ def decompile_instruction(rombytes, start_address,
         cmd=cmd,
         args=args,
         length=address - start_address)
-    return instruction
+    return instruction, new_chunks
 
 def get_const_replacements():
     """

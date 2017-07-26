@@ -249,6 +249,7 @@ def main():
         print(decompile(args.rom, int(args.offset, 16), type_,
                         cmd_table=cmd_table if not args.raw else {},
                         dec_table=dec_table if not args.raw else {},
+                        end_commands=end_cmds,
                         verbose=args.verbose if args.verbose is not None else 0))
 
 
