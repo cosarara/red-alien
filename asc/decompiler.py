@@ -2,6 +2,7 @@
 # -*- coding: utf-8 -*-
 
 import os
+from collections import namedtuple
 
 from .utils import debug, vdebug, data_path, get_rom_offset
 from . import pokecommands as pk
@@ -12,77 +13,236 @@ MAX_NOPS = 10
 END_COMMANDS = ["end", "jump", "return"]
 END_HEX_COMMANDS = [0xFF]
 
-def decompile(file_name, offset, type_="script", raw=False,
-              end_commands=END_COMMANDS, end_hex_commands=END_HEX_COMMANDS,
+Chunk = namedtuple("Chunk", ["addr", "type", "length", "content"])
+Instruction = namedtuple("Instruction", ["addr", "name", "cmd", "args", "length"])
+
+
+def decompile(file_name, start_address, type_="script",
               cmd_table=pk.pkcommands, dec_table=pk.dec_pkcommands,
+              end_commands=END_COMMANDS, end_hex_commands=END_HEX_COMMANDS,
               verbose=0):
-    # Preparem ROM text
-    debug("'file name = " + file_name)
-    debug("'address = " + hex(offset))
-    debug("'---\n")
+    """
+    An instruction has:
+    * a start address
+    * command name
+    * a command: entry in pk.pkcommands
+    * arguments:
+        * pairs of (int value, nice text)
+    * a length
+
+    We build a list of chunks, then convert it to a string and return it.
+    """
     with open(file_name, "rb") as f:
         rombytes = f.read()
-    offsets = [[offset, type_]]
-    textscript = ''
-    decompiled_offsets = []
-    while offsets:
-        offset = offsets[0][0]
-        type_ = offsets[0][1]
-        if type_ == "script":
-            textscript_, new_offsets, incs = demake_bytecode(
-                rombytes, offset, offsets,
-                end_commands=end_commands,
-                end_hex_commands=end_hex_commands,
-                raw=raw,
-                cmd_table=cmd_table,
-                dec_table=dec_table,
-                verbose=verbose)
-            inced = False
-            for inc in incs:
-                a = '#include "{}"\n'.format(inc)
-                if a not in textscript:
-                    textscript += a
-                    inced = True
-            if inced:
-                textscript += "\n"
-            textscript += ("#org " + hex(offset) + "\n" +
-                           textscript_ + "\n")
-            for new_offset in new_offsets:
-                new_offset[0] &= 0xffffff
-                if (new_offset not in offsets and
-                        new_offset[0] not in decompiled_offsets):
-                    offsets += [new_offset]
-        if type_ == "text":
-            text = decompile_text(rombytes, offset, raw=raw)
-            lines = [text[i:i+80] for i in range(0, len(text), 80)]
-            text = "".join([("= " + line + "\n") for line in lines])
-            textscript += ("#org " + hex(offset) + "\n" + text + "\n")
-        if type_ == "movs":
-            textscript_tmp, includes = decompile_movs(rombytes, offset, raw=raw)
-            textscript += ("#org " + hex(offset) + "\n" +
-                           textscript_tmp + "\n")
-            inctxt = ""
-            for include in includes:
-                inctxt += '#include "{}"\n'.format(include)
-            textscript = inctxt + "\n" + textscript
-        if type_ == "raw":
-            textscript_tmp = decompile_rawb(rombytes, offset)
-            textscript += ("#org " + hex(offset) + "\n" +
-                           textscript_tmp + "\n")
-        del offsets[0]
-        decompiled_offsets.append(offset)
-        # Removing duplicates doesn't hurt, right?
-        decompiled_offsets = list(set(decompiled_offsets))
-        if len(textscript) > 200000:
-            raise Exception('This seems too long, crashing for your safety')
-    return textscript
 
-def const_arg(cmd, arg, arg_i, cmd_table, dec_table, rombytes, history):
-    cmd_data = cmd_table[cmd]
-    #print(cmd)
-    types = cmd_data["args"][0]
-    #sizes = cmd_data["args"][1]
-    type = types.split(",")[arg_i].strip()
+    # build mov table
+    with open(os.path.join(data_path, "stdlib", "stdmoves.rbh")) as f:
+        moves = f.read()
+    moves = moves.split("//@")
+    rom_code = rombytes[0xAC:0xAC+4].decode("ascii", errors="replace")
+    includes = set()
+    for movelist in moves:
+        if (rom_code == "AXVE" and movelist.startswith("applymoves_rs") or
+                rom_code == "BPRE" and movelist.startswith("applymoves_fr")):
+
+            moves = filter(lambda s: "#define" in s,
+                                remove_comments(movelist).split("\n"))
+            moves = {int(value, 16): name
+                     for _, name, _, value in map(str.split, moves)}
+            break
+    else:
+        moves = {}
+
+    chunk = Chunk(start_address, type_, None, None)
+    todo_chunks = [chunk]
+    done_chunks = []
+    chunks = [chunk]
+
+    def is_redundant(c, chunks):
+        for c2 in chunks:
+            if c is c2:
+                continue
+            if c.type != c2.type:
+                continue
+            if c.addr == c2.addr:
+                return c2
+            if c2.length is None:
+                continue
+            if c.addr >= c2.addr and c.addr < c2.addr+c2.length:
+                return c2
+        return False
+
+    while todo_chunks:
+        # remove redundant todo chunks:
+        todo_chunks = list(filter(
+            lambda c: not is_redundant(c, todo_chunks+done_chunks),
+            todo_chunks))
+
+        if not todo_chunks:
+            break
+
+        # decompile a chunk
+
+        c, nc = decompile_chunk(todo_chunks.pop(), rombytes, chunks, cmd_table, dec_table,
+                                end_commands, end_hex_commands, moves, verbose)
+        todo_chunks += nc
+        done_chunks.append(c)
+
+    chunks = done_chunks
+    chunks = list(filter(lambda c: not is_redundant(c, chunks), chunks))
+
+    # Convert to text
+    text = ""
+    for chunk in sorted(chunks, key=lambda i: chunk.addr):
+        if chunk.length is None:
+            continue
+        text += "\n#org 0x{:x}\n".format(chunk.addr)
+        if chunk.type in ["script", "movs"]:
+            #print("' chunk")
+            for instruction in chunk.content:
+                if instruction.addr != chunk.addr:
+                    for chunk2 in chunks:
+                        if instruction.addr == chunk2.addr:
+                            text += "' joined\n"
+                            text += "#org 0x{:x}\n".format(chunk2.addr)
+                #print(instruction.name, instruction.args, "'", instruction.addr)
+                if instruction.name is not None:
+                    text += instruction.name
+                    if instruction.args:
+                        text += ' '
+                    text += ' '.join(nice for num, nice in instruction.args)
+                    text += '\n'
+                else:
+                    text += "#raw 0x{:02X}\n".format(instruction.cmd["hex"])
+        elif chunk.type == "text":
+            text += split_text(chunk.content)
+        if chunk.type == "movs":
+            includes.add("stdlib/stdmoves.rbh")
+
+    for inc in includes:
+        text = '#include "' + inc + '"\n' + text
+    return text
+
+def decompile_chunk(chunk, rombytes, chunks,
+                    cmd_table=pk.pkcommands, dec_table=pk.dec_pkcommands,
+                    end_commands=END_COMMANDS, end_hex_commands=END_HEX_COMMANDS,
+                    moves={}, verbose=0):
+    address = chunk.addr
+    content = []
+    new_chunks = []
+    if chunk.type == "script":
+        while True:
+            instruction, nc = decompile_instruction(
+                rombytes, address, cmd_table, dec_table, chunks, verbose)
+            new_chunks = new_chunks + nc
+            #print(instruction)
+            address += instruction.length
+            content.append(instruction)
+            if (instruction.name in end_commands or
+                    instruction.cmd["hex"] in end_hex_commands):
+                break
+    elif chunk.type == "movs":
+        while True:
+            b = rombytes[address]
+            name = None
+            if b in moves:
+                name = moves[b]
+            instruction = Instruction(addr=address, name=name, cmd={"hex": b},
+                                      args=[], length=1)
+            address += 1
+            content.append(instruction)
+            if (instruction.name in END_COMMANDS or
+                    instruction.cmd["hex"] in (0xFE, 0xFF)):
+                break
+    elif chunk.type == "text":
+        length = rombytes[chunk.addr:].find(b"\xff")
+        content = decompile_text(rombytes, chunk.addr)
+    length = address - chunk.addr
+    return Chunk(chunk.addr, chunk.type, length, content), new_chunks
+
+def decompile_instruction(rombytes, start_address,
+                          cmd_table=pk.pkcommands, dec_table=pk.dec_pkcommands,
+                          chunks=[], verbose=0):
+    new_chunks = []
+    address = start_address
+    cmd_val = rombytes[address]
+    try:
+        cmd_name = dec_table[cmd_val]
+        cmd = cmd_table[cmd_name]
+    except KeyError:
+        cmd_name = None
+        cmd = {'hex': cmd_val}
+
+    def is_redundant(addr, type_, chunks):
+        for c2 in chunks:
+            if type_ != c2.type:
+                continue
+            if addr == c2.addr:
+                return c2
+            if c2.length is None:
+                continue
+            if addr >= c2.addr and addr < c2.addr+c2.length:
+                return c2
+        return False
+
+    def add_chunk(address, type_):
+        address &= 0xFFFFFF
+        if not is_redundant(address, type_, chunks):
+            new_chunks.append(Chunk(address, type_, None, None))
+
+    address += 1
+    args = []
+    if "vargs" in cmd:
+        type_ = rombytes[address]
+        arg_data = cmd["vargs"]([type_])
+        for n, arg_len in enumerate(arg_data):
+            arg = rombytes[address:address + arg_len]
+            address += arg_len
+            arg = int.from_bytes(arg, "little")
+            if "vptr" in cmd:
+                for o_arg_n, o_type in cmd["vptr"]([type_]):
+                    if o_arg_n == n:
+                        add_chunk(arg, o_type)
+            carg, inc = const_arg(cmd_name, arg, n, cmd_table,
+                                  dec_table, rombytes, "", types="")
+            if carg is None:
+                args.append((arg, hex(arg)))
+            else:
+                args.append((arg, carg))
+
+    elif "args" in cmd:
+        if len(cmd["args"]) == 3: # extra padding, happens only with loadpointer
+            address += len(cmd["args"][2])
+        for n, arg_len in enumerate(cmd["args"][1]):
+            arg = rombytes[address:address + arg_len]
+            address += arg_len
+            arg = int.from_bytes(arg, "little")
+            if "offset" in cmd:
+                for o_arg_n, o_type in cmd["offset"]:
+                    if o_arg_n == n:
+                        #print("adding to do chunk at "+hex(arg)+" of type "+str(o_type)+" in "+str(cmd)+" "+hex(address))
+                        add_chunk(arg, o_type)
+            carg, inc = const_arg(cmd_name, arg, n, cmd_table,
+                                  dec_table, rombytes, "")
+            if carg is None:
+                args.append((arg, hex(arg)))
+            else:
+                #if not inc in incs:
+                #    incs.append(inc)
+                args.append((arg, carg))
+
+    instruction = Instruction(
+        addr=start_address,
+        name=cmd_name,
+        cmd=cmd,
+        args=args,
+        length=address - start_address)
+    return instruction, new_chunks
+
+def get_const_replacements():
+    """
+    Fetch all constants from header files to use in const_arg
+    """
     intt = lambda a: int(a, 16) if a.startswith("0x") else int(a)
     # abilities
     with open(os.path.join(data_path, "stdlib", "stdabilities.rbh")) as f:
@@ -112,9 +272,23 @@ def const_arg(cmd, arg, arg_i, cmd_table, dec_table, rombytes, history):
     effects = {intt(a.split()[2]): a.split()[1]
                for a in effects.split("\n")}
     args_for_type["movescriptid"] = effects
-    #
-    with open(os.path.join(data_path, "stdlib", "stdargs.rbh")) as f:
-        attacks = f.read().strip().split("\n")
+    return args_for_type
+
+args_for_type = get_const_replacements()
+
+def const_arg(cmd, arg, arg_i, cmd_table, dec_table, rombytes, history, types=None):
+    """ Translates an argument to a suitable constant
+    TODO: make it work with non-AI scripts
+    """
+    cmd_data = cmd_table[cmd]
+    #print(cmd)
+    if types is None:
+        types = cmd_data["args"][0]
+    #sizes = cmd_data["args"][1]
+    try:
+        type = types.split(",")[arg_i].strip()
+    except IndexError:
+        return None, ""
     if cmd_table == pk.aicommands:
         if cmd[:3] == "bvb" and type == "byte":
             if "getability" in history: # todo: find latest relevant thing
@@ -129,148 +303,6 @@ def const_arg(cmd, arg, arg_i, cmd_table, dec_table, rombytes, history):
                 return args[arg], header
     return None, ""
 
-def demake_bytecode(rombytes, offset, added_offsets,
-                    end_commands=END_COMMANDS,
-                    end_hex_commands=END_HEX_COMMANDS, raw=False,
-                    cmd_table=pk.pkcommands,
-                    dec_table=pk.dec_pkcommands,
-                    verbose=0):
-    rom_offset = get_rom_offset(offset)
-    offsets = []
-    hexscript = rombytes
-    i = rom_offset
-    textscript = ""
-    text_command = ""
-    hex_command = 0
-    hex_command = hexscript[i]
-    nop_count = 0 # Stop on 10 nops for safety
-    incs = [] # include statements that will be added
-    while (text_command not in end_commands and
-           hex_command not in end_hex_commands):
-        hex_command = hexscript[i]
-        orig_i = i
-        if hex_command in dec_table and not raw:
-            text_command = dec_table[hex_command]
-            textscript += text_command
-            i += 1
-            command_data = cmd_table[text_command]
-            if "args" in command_data:
-                if len(command_data["args"]) == 3:
-                    i += len(command_data["args"][2])
-                for n, arg_len in enumerate(command_data["args"][1]):
-                    arg = hexscript[i:i + arg_len]
-                    arg = int.from_bytes(arg, "little")
-                    if "offset" in command_data:
-                        for o_arg_n, o_type in command_data["offset"]:
-                            if o_arg_n == n:
-                                tuple_to_add = [arg, o_type]
-                                if tuple_to_add not in added_offsets+offsets:
-                                    offsets.append(tuple_to_add)
-                    carg, inc = const_arg(text_command, arg, n, cmd_table,
-                                          dec_table, rombytes, textscript)
-                    if carg is None:
-                        textscript += " " + hex(arg)
-                    else:
-                        if not inc in incs:
-                            incs.append(inc)
-                        textscript += " " + carg
-                    i += arg_len
-        else:
-            textscript += "#raw " + hex(hex_command)
-            i += 1
-        if hex_command == 0:
-            nop_count += 1
-            if nop_count >= MAX_NOPS and MAX_NOPS != 0:
-                textscript += " ' Too many nops. Stopping"
-                break
-        else:
-            nop_count = 0
-
-        if verbose >= 1:
-            textscript += " //" + " ".join(hex(n)[2:].zfill(2) for n in hexscript[orig_i:i])
-            if verbose >= 2:
-                textscript += " -  " + hex(orig_i)
-        textscript += "\n"
-        if i - rom_offset > 10000:
-            textscript += "' This is getting too big, I'll stop"
-            break
-
-    return textscript, offsets, incs
-
-def decompile_rawh(romtext, offset, end_hex_commands=(0xFF,)):
-    rom_offset = get_rom_offset(offset)
-    vdebug(offset)
-    hexscript = romtext
-    i = rom_offset
-    textscript = ""
-    hex_command = ""
-    while hex_command not in end_hex_commands:
-        try:
-            hex_command = hexscript[i]
-        except IndexError:
-            break
-        textscript += "#raw " + hex(hex_command)
-        i += 1
-        textscript += "\n"
-    return textscript
-
-def decompile_rawb(romtext, offset, end_hex_commands=(0xFF,)):
-    rom_offset = get_rom_offset(offset)
-    vdebug(offset)
-    hexscript = romtext
-    i = rom_offset
-    textscript = ""
-    hex_command = ""
-    while hex_command not in end_hex_commands:
-        try:
-            hex_command = hexscript[i]
-        except IndexError:
-            break
-        textscript += "#raw " + hex(hex_command)
-        i += 1
-        textscript += "\n"
-    return textscript
-
-# TODO: use nice define'd thingies
-def decompile_movs(romtext, offset, end_hex_commands=(0xFE, 0xFF), raw=False):
-    rom_offset = get_rom_offset(offset)
-    vdebug(offset)
-    hexscript = romtext
-    i = rom_offset
-    textscript = ""
-    hex_command = ""
-    with open(os.path.join(data_path, "stdlib", "stdmoves.rbh")) as f:
-        moves = f.read()
-    moves = moves.split("//@")
-    rom_code = romtext[0xAC:0xAC+4].decode("ascii")
-    includes = []
-    for movelist in moves:
-        if (rom_code == "AXVE" and movelist.startswith("applymoves_rs") or
-                rom_code == "BPRE" and movelist.startswith("applymoves_fr")):
-
-            moves = list(filter(lambda s: "#define" in s,
-                                remove_comments(movelist).split("\n")))
-            moves = {int(value, 16): name
-                     for _, name, _, value in map(str.split, moves)}
-            break
-    else:
-        moves = {}
-    while hex_command not in end_hex_commands:
-        try:
-            hex_command = hexscript[i]
-        except IndexError:
-            break
-
-        if hex_command in moves:
-            textscript += moves[hex_command]
-            includes = ["stdlib/stdmoves.rbh"]
-        else:
-            textscript += "#raw " + hex(hex_command)
-        i += 1
-        textscript += "\n"
-    return textscript, includes
-
-
 def decompile_text(romtext, offset, raw=False):
     rom_offset = get_rom_offset(offset)
     start = rom_offset
@@ -282,3 +314,29 @@ def decompile_text(romtext, offset, raw=False):
     translated_text = text_translate.hex_to_ascii(text, d_table)
     return translated_text
 
+def split_text(text):
+    splittable = ("\\n", "\\p", "\\l", " ", "\\c", "\\v")
+    line = ""
+    word = ""
+    out = ""
+    char = ""
+    for n, c in enumerate(text):
+        if char == "\\":
+            char += c
+        else:
+            char = c
+        if char == "\\":
+            continue
+
+        word += char
+        if (char in splittable or n == len(text) - 1 or
+                (len(word) >= 3 and word[-4:-2] == "\\h")): # word end
+            if len(word) + len(line) > 78:
+                if line:
+                    out += "= " + line + "\n"
+                line = word
+            else:
+                line += word
+            word = ""
+    out += "= " + line + "\n"
+    return out

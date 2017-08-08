@@ -241,12 +241,14 @@ def main():
         for end_command in args.END_COMMANDS_to_delete:
             decompiler.END_COMMANDS.remove(end_command)
         print("'" + '-'*20)
+        print("'file name = ", args.rom)
+        print("'address = ", args.offset)
+        print("'" + '-'*20)
         end_hex_commands = [] if args.continue_on_0xFF else decompiler.END_HEX_COMMANDS
         type_ = "text" if args.text else "movs" if args.moves else "script"
-        print(decompile(args.rom, int(args.offset, 16), type_, raw=args.raw,
-                        end_hex_commands=end_hex_commands,
-                        cmd_table=cmd_table,
-                        dec_table=dec_table,
+        print(decompile(args.rom, int(args.offset, 16), type_,
+                        cmd_table=cmd_table if not args.raw else {},
+                        dec_table=dec_table if not args.raw else {},
                         end_commands=end_cmds,
                         verbose=args.verbose if args.verbose is not None else 0))
 

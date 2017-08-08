@@ -225,6 +225,9 @@ class Window(QtWidgets.QMainWindow):
 
         with open(fn, 'r') as f:
             text = f.read()
+            # Scintilla doesn't use a trailing newline
+            if text and text[-1] == "\n":
+                text = text[:-1]
             self.ui.textEdit.setText(text)
         self.ui.statusbar.showMessage("loaded " + fn)
 
@@ -247,10 +250,11 @@ class Window(QtWidgets.QMainWindow):
 
     def save_file(self):
         if not self.file_name:
-            self.save_as()
+            return self.save_as()
         fn = self.file_name
         with open(fn, 'w') as f:
-            f.write(self.ui.textEdit.text())
+            # Scintilla doesn't use a trailing newline
+            f.write(self.ui.textEdit.text() + "\n")
         self.ui.statusbar.showMessage("file saved as " + fn)
 
     def load_rom(self):
@@ -307,10 +311,15 @@ class Window(QtWidgets.QMainWindow):
                 except ValueError:
                     QtWidgets.QMessageBox.critical(self, "Error", "Invalid offset")
                     return
+        if offset > os.stat(self.rom_file_name).st_size:
+            offset -= 0x8000000
         cmd, dec, end = self.cmds()
-        self.ui.textEdit.setText(asc.decompile(self.rom_file_name, offset,
-                                               cmd_table=cmd, dec_table=dec,
-                                               end_commands=end))
+        try:
+            self.ui.textEdit.setText(asc.decompile(self.rom_file_name, offset,
+                                                   cmd_table=cmd, dec_table=dec,
+                                                   end_commands=end))
+        except Exception as e:
+            QtWidgets.QMessageBox.critical(self, "Error", str(e))
 
     def error_message(self, msg):
         QtWidgets.QMessageBox.critical(self, "Error", msg)
@@ -690,10 +699,14 @@ def main():
         win.file_name = args.file
         with open(args.file, 'r') as f:
             text = f.read()
+            # Scintilla doesn't use a trailing newline
+            if text and text[-1] == "\n":
+                text = text[:-1]
         win.ui.textEdit.setText(text)
     elif args.offset:
+        print(args.offset)
         win.rom_file_name = args.file
-        win.decompile(int(args.offset, 16))
+        win.decompile(int(args.offset, 16) & 0xFFFFFF)
     sys.exit(app.exec_())
 
 if __name__ == "__main__":

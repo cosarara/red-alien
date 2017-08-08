@@ -75,15 +75,18 @@ def ascii_to_hex(astring, dictionary=read_table_encode(table_str)):
     return trans_string
 
 
-def hex_to_ascii(string, dictionary=read_table_decode(table_str)):
+def hex_to_ascii(string, dictionary=read_table_decode(table_str), magic=True):
+    """ string is a bytes() object """
     trans_string = ''
-    for i in range(len(string)):
-        pos = i
-        byte = string[pos]
-        if byte in dictionary:
+    for pos, byte in enumerate(string):
+        # decompile color codes to \h escapes
+        if magic and (pos > 0 and string[pos-1] in (0xFC, 0xFD)
+                      or pos > 1 and string[pos-2] == 0xFC):
+            trans_string += "\\h{:02x}".format(byte)
+        elif byte in dictionary:
             trans_string += dictionary[byte]
         else:
-            trans_string += "\\h" + hex(byte)[2:]
+            trans_string += "\\h{:02x}".format(byte)
     return trans_string
 
 

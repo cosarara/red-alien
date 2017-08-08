@@ -61,7 +61,7 @@
     "subtractvar": {"hex": 0x18, "args": ("var, value", (2, 2))},
     "copyvar": {"hex": 0x19, "args": ("var, var", (2, 2))},
     "copyvarifnotzero": {"hex": 0x1A, "args": ("var, var", (2, 2))},
-    "comparebuffers": {"hex": 0x1B, "args": ("buffer, buffer", (2, 2))},
+    "comparebanks": {"hex": 0x1B, "args": ("bank, bank", (1, 1))},
     "comparevartobyte": {"hex": 0x1C, "args": ("var, byte", (2, 1))},
     "comparevartofarbyte": {"hex": 0x1D, "args": ("var, adress", (2, 4))},
     "comparefarbytetovar": {"hex": 0x1E, "args": ("adress, var", (4, 2))},
@@ -118,8 +118,8 @@
     "checkfurniture": {"hex": 0x4E, "args": ("type", (2,))},
     "applymovement": {"hex": 0x4F, "args": ("minisprite, offset", (2, 4)),
                       "offset": [(1, "movs")]},
-    "applymovementfinishat": {"hex": 0x50, "args": ("minisprite, offset"
-                                                    "x, y",
+    # FIXME
+    "applymovementfinishat": {"hex": 0x50, "args": ("minisprite, offset, x, y",
                                                     (2, 4, 1, 1)),
                               "offset": [(1, "movs")]},
     "pauseevent": {"hex": 0x51, "args": ("minisprite", (2,))},
@@ -133,9 +133,17 @@
     "fardisappear": {"hex": 0x59, "args": ("minisprite, bank, map", (2, 1, 1))},
     "faceplayer": {"hex": 0x5A},
     "spriteface": {"hex": 0x5B, "args": ("sprite, face", (2, 1))},
-    "trainerbattle": {"hex": 0x5C, "args": ("kind, num, ?, startmsg, defeatmsg",
-                                            (1, 2, 2, 4, 4)),
-                      "offset": [(3, "text"), (4, "text")]},
+    "trainerbattle": {"hex": 0x5C, "args": ("variable args", ()),
+                      "vargs": (lambda args:
+                                ((1, 2, 2, 4) +
+                                 ((4,) if args[0] != 3 else ()) +
+                                 ((4,) if args[0] in (1, 2, 4, 6, 7, 8) else ()) +
+                                 ((4,) if args[0] in (6, 8) else ()))),
+                      "vptr": (lambda args:
+                               [(3, "text")] + ([(4, "text")] if args[0] != 3 else []))},
+    #"trainerbattle": {"hex": 0x5C, "args": ("kind, num, ?, startmsg, defeatmsg",
+    #                                        (1, 2, 2, 4, 4)),
+    #                  "offset": [(3, "text"), (4, "text")]},
     "lasttrainerbattle": {"hex": 0x5D},
     "endtrainerbattle": {"hex": 0x5E},
     "endtrainerbattle2": {"hex": 0x5F}, # TODO: Ask ASM guru difference
