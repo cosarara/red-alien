@@ -1,0 +1,56 @@
+version: 1.0.{build}
+build_script:
+- cmd: >-
+
+    echo %cd%
+
+    SET CONDA=C:\Miniconda36
+
+    call %CONDA%\Scripts\Activate %CONDA%
+
+    SET ENVNAME=re_env
+
+    SET PROJDIR=%APPVEYOR_BUILD_FOLDER%
+
+    conda create -y -n %ENVNAME%
+
+    activate %ENVNAME%
+
+    conda install -y pip
+
+    pip install cx_Freeze
+
+    conda install -y pyqt=5.6.0
+
+    conda install -y -c conda-forge qscintilla2
+
+    pip install --upgrade setuptools 2> nul || exit 0
+
+    cd %PROJDIR%
+
+    dir "%CONDA%\envs\%ENVNAME%/Library/plugins/"
+
+    echo d | xcopy "%CONDA%\envs\%ENVNAME%/Library/plugins/imageformats" imageformats /s /e
+
+    echo d | xcopy "%CONDA%\envs\%ENVNAME%/Library/plugins/platforms" platforms /s /e
+
+    python setup.py --freeze build
+
+    dir
+
+    dir build
+
+
+artifacts:
+- path: build/
+  name: build
+
+deploy:
+- provider: FTP
+  host: www.cosarara.me
+  protocol: sftp
+  username: appveyor
+  password:
+    secure: qnGAYQYhZ3YN/U+8DEGoh1vAHpZYYef/icXeavu6980RfqbcH1pIMkb1MdC8KbkO
+  folder: redalien
+  artifact: build

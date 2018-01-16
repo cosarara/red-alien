@@ -1,15 +1,19 @@
 
 import sys
 import traceback
-def crash(exception):
-    info = traceback.format_exc()
+
+default_excepthook = sys.excepthook
+
+def crash(t, v, trace):
+    info = "\n".join(traceback.format_exception(t, v, trace))
     try:
         crash_qt(info)
     except ImportError:
         try:
             crash_tk(info)
         except ImportError:
-            crash_cli(exception)
+            crash_cli(t, v, trace)
+    sys.exit(1)
 
 def crash_qt(info):
     from PyQt5 import QtWidgets
@@ -29,13 +33,11 @@ def crash_tk(info):
     QUIT.pack({"side": "left"})
     tk.mainloop()
 
-def crash_cli(ex):
-    print("Sry, can't GUI. Something bad happened, read this:")
-    raise ex
+def crash_cli(t, v, trace):
+    default_excepthook(t, v, trace)
+
+sys.excepthook = crash
 
 if __name__ == "__main__":
-    try:
-        aww # pylint: disable=undefined-variable
-    except Exception as e:
-        crash(e)
+    aww # pylint: disable=undefined-variable
 

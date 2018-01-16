@@ -196,6 +196,8 @@ class Window(QtWidgets.QMainWindow):
 
         self.ui.textEdit.setText(asc.get_canvas())
 
+        self.ui.textEdit.cursorPositionChanged.connect(self.cur_pos_changed)
+
     def ask_save(self):
         # why would you save the base template amirite?
         if self.ui.textEdit.text() == asc.get_canvas():
@@ -270,6 +272,12 @@ class Window(QtWidgets.QMainWindow):
     def action_debug(self):
         self.compile("debug")
 
+    def cmds(self):
+        return {
+            "ow": (pk.pkcommands, pk.dec_pkcommands, pk.end_pkcommands),
+            "ai": (pk.aicommands, pk.dec_aicommands, pk.end_aicommands),
+        }[self.mode]
+
     def decompile(self, offset=None):
         if not self.ask_save():
             return
@@ -305,10 +313,7 @@ class Window(QtWidgets.QMainWindow):
                     return
         if offset > os.stat(self.rom_file_name).st_size:
             offset -= 0x8000000
-        cmd, dec, end = {
-            "ow": (pk.pkcommands, pk.dec_pkcommands, pk.end_pkcommands),
-            "ai": (pk.aicommands, pk.dec_aicommands, pk.end_aicommands),
-        }[self.mode]
+        cmd, dec, end = self.cmds()
         try:
             self.ui.textEdit.setText(asc.decompile(self.rom_file_name, offset,
                                                    cmd_table=cmd, dec_table=dec,
@@ -331,10 +336,7 @@ class Window(QtWidgets.QMainWindow):
         include_path = (".", os.path.dirname(self.rom_file_name),
                         os.path.dirname(self.file_name), asc.get_program_dir(),
                         asc.data_path)
-        cmd, dec, end = {
-            "ow": (pk.pkcommands, pk.dec_pkcommands, pk.end_pkcommands),
-            "ai": (pk.aicommands, pk.dec_aicommands, pk.end_aicommands),
-        }[self.mode]
+        cmd, dec, end = self.cmds()
         game = asc.get_game(self.rom_file_name)
         try:
             cleanlines, symbols = asc.compile_script(script,
@@ -438,15 +440,56 @@ class Window(QtWidgets.QMainWindow):
     def set_autocompletion(self):
         api = self.api
         api.clear()
-        cmds = {
-            "ow": pk.pkcommands,
-            "ai": pk.aicommands,
-        }[self.mode]
+        cmds, _, _ = self.cmds()
 
         for c in cmds:
             api.add(c)
 
         api.prepare()
+
+    def cur_pos_changed(self, line_n, pos):
+        line = self.ui.textEdit.text().replace("\r\n", "\n").split("\n")[line_n]
+        cmds, _, _ = self.cmds()
+        words = [w for w in line.split() if w]
+        message = ""
+
+        def find_command_description(word):
+            for cmd_name, data in cmds.items():
+                if word == cmd_name:
+                    args, sizes = data["args"][:2]
+                    if not args:
+                        return cmd_name
+                    else:
+                        return "{}: {} {}".format(cmd_name, args, str(sizes))
+
+        def find_macro_description(word):
+            pass # TODO: pre-process and get macros
+
+        for word in words:
+            desc = find_command_description(word)
+            if desc:
+                message = desc
+                break
+
+        for word in words:
+            desc = find_macro_description(word)
+            if desc:
+                message = desc
+                break
+
+        if message is None:
+            return
+
+        # because of threads and stuff you can't call showMessage directly
+        # from the qsci slot - it will segfault
+        QtCore.QMetaObject.invokeMethod(self, "statusbar_message",
+                                        QtCore.Qt.QueuedConnection,
+                                        QtCore.Q_ARG("QString",
+                                                     message))
+
+    @QtCore.pyqtSlot(str)
+    def statusbar_message(self, message):
+        self.ui.statusbar.showMessage(message)
 
 
 class LogPopup(QtWidgets.QDialog):

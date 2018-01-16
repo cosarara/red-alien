@@ -1,7 +1,4 @@
 #!/usr/bin/env python3
-from asc.crash import crash
-try:
-    from asc.asc_qt import main
-    main()
-except Exception as e:
-    crash(e)
+from asc import crash
+from asc.asc_qt import main
+main()

@@ -12,16 +12,17 @@ except:
     from distutils.core import setup
     # lol hack
     class Executable:
-        def __init__(self, a, base):
+        def __init__(self, *args, **kwargs):
             pass
 
+# imageformats and platforms directores must be fetched from qt install dir
 data_files_cxfreeze = [
-    'asc/data/', 'README.md', 'imageformats', 'asc/data/stdlib']
+    'asc/data/', 'README.md', 'imageformats', 'platforms', 'asc/data/stdlib']
 build_exe_options = {"packages": ["os", "PyQt5.QtSvg", "PyQt5.QtPrintSupport",
                                   "pkg_resources"],
+                     "excludes": ["tkinter"],
                      "include_files": data_files_cxfreeze,
-                     "includes": "PyQt5.QtCore",
-                     "icon": "utils/asc.ico"}
+                     "includes": "PyQt5.QtCore"}
 
 try:
     with os.popen("git describe --always | sed 's|-|.|g'") as psfile:
@@ -47,8 +48,8 @@ setup(name='Red Alien',
       requires=['sip', 'PyQt5', 'Qsci'],
       options={"build_exe": build_exe_options},
       executables=[
-          Executable("asc-qt", base=base),
-          Executable("asc-cli", base=basecli),
+          Executable("asc-qt", base=base, icon="utils/asc.ico"),
+          Executable("asc-cli", base=basecli, icon="utils/asc.ico"),
           ],
       )
 
