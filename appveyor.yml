@@ -51,6 +51,6 @@ deploy:
   protocol: sftp
   username: appveyor
   password:
-    secure: qnGAYQYhZ3YN/U+8DEGoh1vAHpZYYef/icXeavu6980RfqbcH1pIMkb1MdC8KbkO
+    secure: DwuoTz5lxAp3rYcz71+fW7oBP+s2LY4yUjccPwXB7+I=
   folder: redalien
   artifact: build
