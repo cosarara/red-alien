@@ -24,11 +24,7 @@ build_exe_options = {"packages": ["os", "PyQt5.QtSvg", "PyQt5.QtPrintSupport",
                      "include_files": data_files_cxfreeze,
                      "includes": "PyQt5.QtCore"}
 
-try:
-    with os.popen("git describe --always | sed 's|-|.|g'") as psfile:
-        version = psfile.read().strip("\n")
-except:
-    version = "git"
+version = "2.0.0"
 
 base = None
 basecli = None
