@@ -25,9 +25,11 @@ operating systems.
 Red alien is written in python and can be run directly from the
 source files if you have all the dependencies installed:
 
-* Python 3
-* PyQt 5
-* python-qscintilla
+Dependency | Arch package   | Debian/Ubuntu package
+---------- | -------------- | ---------------------
+Python 3   | `python`       | `python3`
+PyQt 5     | `python-pyqt5` | `python3-pyqt5`<br>(depends on `python3`)
+Python bindings for Qscintilla | `python-qscintilla-qt5` | `python3-pyqt5.qsci`<br>(depends on `python3-pyqt5`)
 
 It can be installed system-wide (although it's not needed):
 
