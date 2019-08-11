@@ -463,7 +463,7 @@ class Window(QtWidgets.QMainWindow):
                         return "{}: {} {}".format(cmd_name, args, str(sizes))
 
         def find_macro_description(word):
-            pass # TODO: pre-process and get macros
+            return False # TODO: pre-process and get macros
 
         for word in words:
             desc = find_command_description(word)

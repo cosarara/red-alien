@@ -239,16 +239,19 @@ def decompile_instruction(rombytes, start_address,
         length=address - start_address)
     return instruction, new_chunks
 
+
+# TODO: ugly
+intt = lambda a: int(a, 16) if a.startswith("0x") else int(a)
+# abilities
+with open(os.path.join(data_path, "stdlib", "stdabilities.rbh")) as f:
+    abis = f.read().strip()
+abis = {intt(a.split()[2]): a.split()[1]
+        for a in abis.split("\n")}
+
 def get_const_replacements():
     """
     Fetch all constants from header files to use in const_arg
     """
-    intt = lambda a: int(a, 16) if a.startswith("0x") else int(a)
-    # abilities
-    with open(os.path.join(data_path, "stdlib", "stdabilities.rbh")) as f:
-        abis = f.read().strip()
-    abis = {intt(a.split()[2]): a.split()[1]
-            for a in abis.split("\n")}
     # random args
     with open(os.path.join(data_path, "stdlib", "stdargs.rbh")) as f:
         arg_names_list = f.read().strip().split("//@")
@@ -291,6 +294,7 @@ def const_arg(cmd, arg, arg_i, cmd_table, dec_table, rombytes, history, types=No
         return None, ""
     if cmd_table == pk.aicommands:
         if cmd[:3] == "bvb" and type == "byte":
+            # history currently broken so whatever FIXME
             if "getability" in history: # todo: find latest relevant thing
                 if arg in abis:
                     return abis[arg], "stdabilities.rbh"
