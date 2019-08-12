@@ -20,7 +20,7 @@ run it from source instead. Same on other linux distributions or
 operating systems.
 
 [windows binaries]: http://www.cosarara.me/redalien/#windows
-[AUR]: https://aur.archlinux.org/packages/red-alien-git/
+[AUR]: https://aur.archlinux.org/packages/red-alien/
 
 Red alien is written in python and can be run directly from the
 source files if you have all the dependencies installed:
