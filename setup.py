@@ -31,12 +31,12 @@ basecli = None
 if sys.platform == "win32":
     base = "Win32GUI"
 
-setup(name='Red Alien',
+setup(name='red-alien',
       version=version,
       description="The Pokemon Advanced Script Compiler for GBA",
       author="Jaume (cosarara97) Delclòs",
-      author_email="cosarara97@gmail.com",
-      url="https://github.com/cosarara97/red-alien",
+      author_email="me@cosarara.me",
+      url="https://www.cosarara.me/redalien/",
       packages=['asc'],
       package_data={'asc': ['data/*.txt', 'data/*.tbl', 'data/*.png',
           'data/*.pks', 'data/*.svg', 'data/stdlib/*']},
