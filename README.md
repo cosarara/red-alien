@@ -14,8 +14,10 @@ features.
 
 Red Alien is built using cross-platform technologies, so it should run
 everywhere. I build [windows binaries] every now and then.
+Binary packages for various distributions are available at
+<https://software.opensuse.org//download.html?project=home%3Acosarara&package=red-alien>
 
-Arch Linux users can install its [AUR] package.
+Arch Linux users can also install its [AUR] package.
 
 On other unix-like systems it can be installed with:
 
