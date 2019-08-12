@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "red-alien"
-version = "2.0.0"
+version = "2.0.1"
 description = "A compiler/decompiler for the script system found in GBA pokemon games"
 authors = ["Jaume Delclòs Coll <me@cosarara.me>"]
 license = "GPL-3.0+"
