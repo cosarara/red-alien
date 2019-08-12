@@ -2,5 +2,5 @@ Copyright Jaume Delclòs Coll 2012-2016 (aka cosarara97)
 All the code but pokedef.h (which was taken from PKSV) and
 part of the files in stdlib/ (taken from XSE) is by me and under the GPLv3.
 
-See GPL.txt
+See LICENSE.
 
