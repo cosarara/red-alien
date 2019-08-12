@@ -6,8 +6,8 @@ compiler for the scripting system found in GBA Pokémon games.
 See the [documentation] and [examples] for an overview of its
 features.
 
-[Red Alien]: http://www.cosarara.me/redalien/
-[documentation]: http://www.cosarara.me/redalien/#docs
+[Red Alien]: https://www.cosarara.me/redalien/
+[documentation]: https://www.cosarara.me/redalien/#docs
 [examples]: examples/
 
 ## Running
