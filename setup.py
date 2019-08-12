@@ -2,34 +2,48 @@
 
 import os, sys
 
-try:
-    if not "--freeze" in sys.argv: # hack!
-        fail()
+freeze_options = {}
+
+freeze = "--freeze" in sys.argv
+
+if freeze:
     sys.argv.remove("--freeze")
     from cx_Freeze import setup, Executable
-except:
-    print("Warning: cx_Freeze not found. Using distutils")
+    #try:
+    #    sys.argv.remove("--freeze")
+    #    from cx_Freeze import setup, Executable
+    #except ImportError:
+    #    print("Warning: cx_Freeze not found. Using distutils")
+    #    from distutils.core import setup
+    #    freeze = False
+
+#if freeze:
+    base = None
+    basecli = None
+    if sys.platform == "win32":
+        base = "Win32GUI"
+
+
+    # imageformats and platforms directores must be fetched from qt install dir
+    data_files_cxfreeze = [
+        'asc/data/', 'README.md', 'imageformats', 'platforms', 'asc/data/stdlib']
+    build_exe_options = {"packages": ["os", "PyQt5.QtSvg", "PyQt5.QtPrintSupport",
+                                      "pkg_resources"],
+                         "excludes": ["tkinter"],
+                         "include_files": data_files_cxfreeze,
+                         "includes": "PyQt5.QtCore"}
+
+    freeze_options = {
+        "executables": [
+            Executable("asc-qt", base=base, icon="utils/asc.ico"),
+            Executable("asc-cli", base=basecli, icon="utils/asc.ico"),
+        ],
+        "options": {"build_exe": build_exe_options},
+    }
+else:
     from distutils.core import setup
-    # lol hack
-    class Executable:
-        def __init__(self, *args, **kwargs):
-            pass
 
-# imageformats and platforms directores must be fetched from qt install dir
-data_files_cxfreeze = [
-    'asc/data/', 'README.md', 'imageformats', 'platforms', 'asc/data/stdlib']
-build_exe_options = {"packages": ["os", "PyQt5.QtSvg", "PyQt5.QtPrintSupport",
-                                  "pkg_resources"],
-                     "excludes": ["tkinter"],
-                     "include_files": data_files_cxfreeze,
-                     "includes": "PyQt5.QtCore"}
-
-version = "2.0.0"
-
-base = None
-basecli = None
-if sys.platform == "win32":
-    base = "Win32GUI"
+version = "2.0.1"
 
 setup(name='red-alien',
       version=version,
@@ -40,13 +54,8 @@ setup(name='red-alien',
       packages=['asc'],
       package_data={'asc': ['data/*.txt', 'data/*.tbl', 'data/*.png',
           'data/*.pks', 'data/*.svg', 'data/stdlib/*']},
+      #data_files=[('share/applications', ['red-alien.desktop'])],
       scripts=['asc-qt', 'asc-cli'],
       requires=['sip', 'PyQt5', 'Qsci'],
-      options={"build_exe": build_exe_options},
-      executables=[
-          Executable("asc-qt", base=base, icon="utils/asc.ico"),
-          Executable("asc-cli", base=basecli, icon="utils/asc.ico"),
-          ],
+      **freeze_options
       )
-
-
