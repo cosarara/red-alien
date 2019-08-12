@@ -4,6 +4,10 @@ version = "2.0.1"
 description = "A compiler/decompiler for the script system found in GBA pokemon games"
 authors = ["Jaume Delclòs Coll <me@cosarara.me>"]
 license = "GPL-3.0+"
+readme = "README.md"
+homepage = "https://www.cosarara.me/redalien/"
+repository = "https://github.com/cosarara/red-alien"
+documentation = "https://www.cosarara.me/redalien/manual/"
 
 [tool.poetry.dependencies]
 python = "^3"
@@ -15,3 +19,10 @@ QScintilla = "^2"
 [build-system]
 requires = ["poetry>=0.12"]
 build-backend = "poetry.masonry.api"
+
+[[tool.poetry.packages]]
+include = "asc"
+
+[tool.poetry.scripts]
+asc-cli = "asc.asc:main"
+asc-qt = "asc.asc_qt:main"

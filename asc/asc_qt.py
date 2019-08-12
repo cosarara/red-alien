@@ -688,6 +688,7 @@ class AIScriptGetAddressPopup(QtWidgets.QDialog):
         return
 
 def main():
+    from . import crash
     parser = argparse.ArgumentParser(description='Red Alien, the Advanced Pokémon Script Compiler')
     parser.add_argument('file', nargs='?', help="Either a script or a ROM")
     parser.add_argument('offset', nargs='?', help="Needed if the file is a ROM image")
